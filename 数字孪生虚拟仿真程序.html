@@ -1,0 +1,987 @@
+t<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>EM蓄电池 · 3D数字孪生</title>
+  <!-- 引入 ECharts 和 Three.js -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #080c18;
+      color: #e5e9f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 14px;
+    }
+    .platform-wrapper {
+      max-width: 1500px;
+      width: 100%;
+      background: rgba(10, 18, 34, 0.82);
+      backdrop-filter: blur(14px);
+      border-radius: 2.8rem;
+      padding: 1.6rem 1.8rem 2.2rem;
+      box-shadow: 0 30px 60px -10px rgba(0,0,0,0.9), 0 0 0 1px rgba(0, 200, 255, 0.25);
+      border: 1px solid rgba(0, 200, 255, 0.12);
+      position: relative;
+      overflow: hidden;
+    }
+    #three-container {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      pointer-events: none;
+      border-radius: 2.8rem;
+      overflow: hidden;
+      opacity: 0.55;
+    }
+    #three-container canvas { display: block; width: 100% !important; height: 100% !important; }
+    .main-content { position: relative; z-index: 5; }
+    .login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; }
+    .login-screen.hidden { display: none; }
+    .login-card {
+      background: rgba(8, 16, 32, 0.8);
+      backdrop-filter: blur(18px);
+      border-radius: 2.2rem;
+      padding: 2.8rem 3.5rem;
+      border: 1px solid rgba(0, 210, 255, 0.35);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+      text-align: center;
+      width: 440px;
+      transform: perspective(800px) rotateX(2deg);
+      transition: 0.4s;
+    }
+    .login-card:hover { transform: perspective(800px) rotateX(0deg); box-shadow: 0 0 40px #00d2ff44; }
+    .login-card h2 {
+      font-size: 2.4rem;
+      font-weight: 500;
+      letter-spacing: 2px;
+      color: #00d2ff;
+      margin-bottom: 0.6rem;
+      text-shadow: 0 0 30px #00d2ff66;
+    }
+    .login-card .subtitle {
+      color: #b8d0e8;
+      margin-bottom: 1.8rem;
+      font-size: 1.0rem;
+      letter-spacing: 2px;
+      border-bottom: 1px solid rgba(0,210,255,0.15);
+      padding-bottom: 0.8rem;
+      font-weight: 300;
+    }
+    .login-card .subtitle i { margin-right: 8px; color: #00ff88; }
+    .input-group { margin-bottom: 1.4rem; text-align: left; }
+    .input-group label { display: block; margin-bottom: 0.3rem; color: #a0b9ce; font-weight: 500; }
+    .input-group input {
+      width: 100%; padding: 0.8rem 1.4rem;
+      background: #0b1424; border: 1px solid #2a3a55; border-radius: 1.2rem;
+      color: white; font-size: 1rem; outline: none; transition: 0.25s;
+    }
+    .input-group input:focus { border-color: #00d2ff; box-shadow: 0 0 24px #00d2ff44; }
+    .btn-login {
+      background: linear-gradient(145deg, #00d2ff, #006a8a);
+      border: none; padding: 0.8rem 2.5rem; border-radius: 3rem;
+      font-weight: bold; font-size: 1.1rem; color: white; cursor: pointer;
+      margin-top: 0.6rem; width: 100%; transition: 0.3s;
+      box-shadow: 0 6px 20px #00d2ff44;
+    }
+    .btn-login:hover { box-shadow: 0 0 50px #00d2ffaa; transform: scale(1.02); }
+    .dashboard { display: none; }
+    .dashboard.active { display: block; }
+
+    .steps-nav {
+      display: flex; flex-wrap: wrap; gap: 0.2rem;
+      margin-bottom: 1.8rem;
+      background: rgba(6, 14, 28, 0.7);
+      backdrop-filter: blur(8px);
+      padding: 0.5rem 0.6rem;
+      border-radius: 3rem;
+      border: 1px solid rgba(0, 200, 255, 0.15);
+      justify-content: space-between;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+    }
+    .step-btn {
+      background: transparent; border: none;
+      color: #7f8ea3; padding: 0.3rem 0.7rem;
+      border-radius: 2rem; font-weight: 600; font-size: 0.65rem;
+      cursor: pointer; transition: 0.25s;
+      display: flex; align-items: center; gap: 0.2rem;
+    }
+    .step-btn i { font-size: 0.8rem; }
+    .step-btn.active { background: #00d2ff; color: #080c18; box-shadow: 0 0 30px #00d2ff; transform: scale(1.05); }
+    .step-btn.completed { background: #00ff88; color: #080c18; box-shadow: 0 0 20px #00ff8866; }
+    .step-btn:hover { color: #b0d0ff; transform: translateY(-2px); }
+
+    .panel {
+      background: rgba(8, 16, 32, 0.6);
+      backdrop-filter: blur(12px);
+      border-radius: 2rem;
+      padding: 1.6rem;
+      border: 1px solid rgba(0, 200, 255, 0.12);
+      margin-bottom: 1.2rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .flex-row { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .card {
+      background: rgba(6, 14, 28, 0.7);
+      border-radius: 1.5rem;
+      padding: 1.2rem;
+      border: 1px solid #2a3a55;
+      flex: 1; min-width: 180px;
+      backdrop-filter: blur(4px);
+      transition: 0.3s;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+    }
+    .card.interactive { cursor: pointer; }
+    .card.interactive:hover { border-color: #00d2ff; box-shadow: 0 0 30px #00d2ff44; transform: translateY(-4px); }
+    .card.selected { border-color: #00ff88; box-shadow: 0 0 30px #00ff8866; }
+    .slider-group { margin: 1rem 0; }
+    input[type=range] { width: 100%; accent-color: #00d2ff; height: 5px; border-radius: 4px; background: #1a2a44; }
+    input[type=number] {
+      background: #0b1424; border: 1px solid #2a3a55;
+      color: white; padding: 0.4rem; border-radius: 0.8rem;
+      width: 100px; transition: 0.2s;
+    }
+    input[type=number]:focus { border-color: #00d2ff; box-shadow: 0 0 16px #00d2ff44; }
+    .gauge-grid { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .gauge-item {
+      text-align: center; background: #0f1e32; border-radius: 1.2rem;
+      padding: 1rem 1.5rem; border: 1px solid #2a3a55;
+      min-width: 100px;
+    }
+    .value { font-size: 2rem; font-weight: 700; color: #00ff88; text-shadow: 0 0 20px #00ff8844; }
+    button.primary {
+      background: linear-gradient(145deg, #00d2ff, #0077a0);
+      border: none; padding: 0.6rem 2rem; border-radius: 3rem;
+      font-weight: bold; cursor: pointer; color: #080c18;
+      transition: 0.25s; font-size: 0.95rem;
+      box-shadow: 0 4px 15px #00d2ff55;
+    }
+    button.primary:hover { box-shadow: 0 0 40px #00d2ffaa; transform: scale(1.04); }
+    button.secondary {
+      background: transparent; border: 1px solid #00d2ff;
+      padding: 0.6rem 2rem; border-radius: 3rem;
+      font-weight: bold; cursor: pointer; color: #00d2ff;
+      transition: 0.25s;
+    }
+    button.secondary:hover { background: rgba(0, 210, 255, 0.12); box-shadow: 0 0 20px #00d2ff33; }
+    .hidden { display: none !important; }
+    .supplier-card, .route-item {
+      background: #0f1e32; border-radius: 1rem; padding: 0.6rem 1rem;
+      margin: 0.4rem 0; cursor: pointer;
+      border: 1px solid transparent; transition: 0.25s;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .supplier-card:hover, .route-item:hover { border-color: #00d2ff; transform: translateX(6px); }
+    .supplier-card.selected, .route-item.selected { border-color: #00ff88; background: #182a44; box-shadow: 0 0 20px #00ff8844; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    th, td { padding: 0.4rem; border-bottom: 1px solid #2a3a55; text-align: left; }
+    th { color: #00d2ff; }
+    .tag { display: inline-block; padding: 0.15rem 0.7rem; border-radius: 2rem; font-size: 0.65rem; background: #00d2ff22; color: #00d2ff; margin: 0.15rem; }
+    .progress-bar { height: 6px; background: #1a2a44; border-radius: 8px; overflow: hidden; margin: 0.4rem 0; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #00d2ff, #00ff88); transition: width 0.6s; }
+    .notification {
+      position: fixed; top: 20px; right: 20px;
+      background: #00ff88; color: #080c18;
+      padding: 0.8rem 1.6rem; border-radius: 1.5rem; font-weight: bold;
+      z-index: 9999; animation: slideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 10px 30px rgba(0,255,136,0.3);
+    }
+    @keyframes slideIn { from { transform: translateX(120%) scale(0.8); opacity:0; } to { transform: translateX(0) scale(1); opacity:1; } }
+    .twin-panel { display: flex; gap: 1.2rem; flex-wrap: wrap; }
+    .twin-panel > div { flex: 1; min-width: 240px; }
+    #three-container { pointer-events: none; }
+    .steps-nav, .panel, .login-card { position: relative; z-index: 5; }
+    .map3d-card {
+      background: rgba(0, 20, 40, 0.4);
+      border-radius: 1.2rem;
+      padding: 0.8rem;
+      border: 1px solid #2a4a6a;
+      height: 260px;
+      position: relative;
+      overflow: hidden;
+    }
+    .map3d-card canvas { width: 100% !important; height: 100% !important; display: block; border-radius: 0.8rem; }
+    .bom-table {
+      background: rgba(0, 20, 40, 0.3);
+      border-radius: 1rem;
+      padding: 0.8rem;
+      margin-top: 0.6rem;
+    }
+    .bom-table table th { background: rgba(0, 210, 255, 0.1); }
+    .bom-table table td, .bom-table table th { padding: 0.5rem 0.8rem; }
+    ::-webkit-scrollbar { width: 5px; background: #0a1424; }
+    ::-webkit-scrollbar-thumb { background: #00d2ff; border-radius: 10px; }
+  </style>
+</head>
+<body>
+<div class="platform-wrapper">
+  <div id="three-container"></div>
+  <div class="main-content">
+    <!-- 登录界面 - 标题已更新 -->
+    <div id="loginScreen" class="login-screen">
+      <div class="login-card">
+        <h2><i class="fas fa-bolt" style="color:#00ff88;"></i> EM 蓄电池</h2>
+        <div class="subtitle">
+          <i class="fas fa-cube"></i> 3D 数字孪生 · 供应链虚拟仿真实验
+        </div>
+        <div class="input-group"><label>用户名</label><input type="text" id="username" value="EMAdmin"></div>
+        <div class="input-group"><label>密码</label><input type="password" id="password" value="supply2024"></div>
+        <button class="btn-login" id="loginBtn"><i class="fas fa-sign-in-alt"></i> 进入实验</button>
+        <p style="margin-top:0.8rem; font-size:0.75rem; color:#5a6b7a;">EMAdmin / supply2024</p>
+      </div>
+    </div>
+
+    <!-- 主工作台 -->
+    <div id="dashboard" class="dashboard">
+      <div class="steps-nav" id="stepNav">
+        <button class="step-btn active" data-step="1"><i class="fas fa-door-open"></i>1.登录</button>
+        <button class="step-btn" data-step="2"><i class="fas fa-file-alt"></i>2.数据</button>
+        <button class="step-btn" data-step="3"><i class="fas fa-chart-line"></i>3.需求</button>
+        <button class="step-btn" data-step="4"><i class="fas fa-industry"></i>4.生产</button>
+        <button class="step-btn" data-step="5"><i class="fas fa-cubes"></i>5.物料</button>
+        <button class="step-btn" data-step="6"><i class="fas fa-truck"></i>6.供应商</button>
+        <button class="step-btn" data-step="7"><i class="fas fa-ship"></i>7.物流</button>
+        <button class="step-btn" data-step="8"><i class="fas fa-play"></i>8.孪生</button>
+        <button class="step-btn" data-step="9"><i class="fas fa-trophy"></i>9.成绩</button>
+        <button class="step-btn" data-step="10"><i class="fas fa-redo"></i>10.复盘</button>
+      </div>
+      <div id="stepContent" class="panel"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    // ---------- 数据集 ----------
+    const MASTER_DATA = {
+      product: { name: "汽车蓄电池", unit: "件", bom: { 电极板: 2, 电解液: 0.1, 电池壳: 1 }, weightConv: 0.2 },
+      materials: [ { name: "电极板", unit: "组" }, { name: "电解液", unit: "桶" }, { name: "电池壳", unit: "个" } ],
+      exchangeRates: { CNY_JPY: 15.2413, CNY_USD: 0.1402, EUR_CNY: 7.8027, USD_CNY: 7.1315 },
+      salesPoints: [
+        { id: "华北总代", inventory: 3600, price: 480, currency: "CNY", cap: 4000, penalty: 5, history: [22203,23710,26400,24771,23722,23231], forecast: 24000 },
+        { id: "华中总代", inventory: 3000, price: 480, currency: "CNY", cap: 4000, penalty: 5, history: [27283,27610,30215,25354,29469,24889], forecast: 28000 },
+        { id: "日本总代", inventory: 4600, price: 7800, currency: "JPY", cap: 8000, penalty: 0.5, history: [20192,17900,17382,19237,20191,15631], forecast: 16500 },
+        { id: "西北总代", inventory: 4000, price: 480, currency: "CNY", cap: 5000, penalty: 5, history: [13039,16162,15634,14619,15108,14526], forecast: 15500 }
+      ],
+      suppliers: [
+        { id: "石家庄极板厂", material: "电极板", unit: "组", stock: 7000, daily: 2828, total: 169680, available: 176680, price: 96, currency: "CNY" },
+        { id: "宝鸡极板厂", material: "电极板", unit: "组", stock: 6500, daily: 3296, total: 197760, available: 204260, price: 85, currency: "CNY" },
+        { id: "四川化工厂", material: "电解液", unit: "桶", stock: 600, daily: 294, total: 17640, available: 18240, price: 400, currency: "CNY" },
+        { id: "贵阳化工厂", material: "电解液", unit: "桶", stock: 500, daily: 283, total: 16980, available: 17480, price: 430, currency: "CNY" },
+        { id: "常州塑料厂", material: "电池壳", unit: "个", stock: 4200, daily: 1920, total: 115200, available: 119400, price: 30, currency: "CNY" },
+        { id: "东莞塑料厂", material: "电池壳", unit: "个", stock: 3000, daily: 1854, total: 111240, available: 114240, price: 26, currency: "CNY" }
+      ],
+      factories: {
+        materialStock: [
+          { factory: "广州蓄电池厂", material: "电极板", stock: 12800, daily: 2884, cap: 13000, penalty: 5 },
+          { factory: "广州蓄电池厂", material: "电解液", stock: 820, daily: 144.2, cap: 1000, penalty: 5 },
+          { factory: "广州蓄电池厂", material: "电池壳", stock: 5500, daily: 1442, cap: 6000, penalty: 5 },
+          { factory: "苏州蓄电池厂", material: "电极板", stock: 13500, daily: 3502, cap: 15000, penalty: 5 },
+          { factory: "苏州蓄电池厂", material: "电解液", stock: 800, daily: 175.1, cap: 1000, penalty: 5 },
+          { factory: "苏州蓄电池厂", material: "电池壳", stock: 7800, daily: 1751, cap: 9000, penalty: 5 }
+        ],
+        production: [
+          { factory: "广州蓄电池厂", stock: 5000, daily: 1442, total: 86520, cap: 6000, penalty: 5 },
+          { factory: "苏州蓄电池厂", stock: 9000, daily: 1751, total: 105060, cap: 10000, penalty: 5 }
+        ]
+      },
+      carriers: [
+        { name: "南方速运", type: "汽运", speed: 480, price: 0.52, base: 30000, currency: "CNY" },
+        { name: "时新快运", type: "汽运", speed: 600, price: 0.68, base: 3000, currency: "CNY" },
+        { name: "中远海运", type: "海运", speed: 230, price: 0.02, base: 50000, currency: "USD" },
+        { name: "南方铁运", type: "铁路", speed: 300, price: 0.28, base: 30000, currency: "CNY" }
+      ],
+      routes: [
+        { id: "R1", from: "广州蓄电池厂", to: "华中总代", dist: 873, minPrice: 453.96, minQty: 331, minFee: 30000, days: 2, mode: "汽运" },
+        { id: "R2", from: "苏州蓄电池厂", to: "华北总代", dist: 922, minPrice: 479.44, minQty: 313, minFee: 30000, days: 2, mode: "汽运" },
+        { id: "R3", from: "宝鸡极板厂", to: "广州蓄电池厂", dist: 1413, minPrice: 734.76, minQty: 817, minFee: 30000, days: 3, mode: "汽运" },
+        { id: "R4", from: "广州蓄电池厂", to: "华北总代", dist: 1683, minPrice: 1144.44, minQty: 14, minFee: 3000, days: 3, mode: "汽运" },
+        { id: "R5", from: "苏州蓄电池厂", to: "华中总代", dist: 614, minPrice: 319.28, minQty: 470, minFee: 30000, days: 2, mode: "汽运" },
+        { id: "R6", from: "东莞塑料厂", to: "广州蓄电池厂", dist: 37, minPrice: 19.24, minQty: 7793, minFee: 30000, days: 1, mode: "汽运" },
+        { id: "R7", from: "广州蓄电池厂", to: "日本总代", dist: 2979, minPrice: 1024.31, minQty: 1455, minFee: 143500, days: 9, mode: "海运" },
+        { id: "R8", from: "苏州蓄电池厂", to: "日本总代", dist: 1922, minPrice: 474.67, minQty: 1455, minFee: 143500, days: 7, mode: "海运" },
+        { id: "R9", from: "广州蓄电池厂", to: "西北总代", dist: 1375, minPrice: 715.00, minQty: 210, minFee: 30000, days: 3, mode: "汽运" },
+        { id: "R10", from: "苏州蓄电池厂", to: "西北总代", dist: 1167, minPrice: 793.56, minQty: 19, minFee: 3000, days: 2, mode: "汽运" }
+      ]
+    };
+
+    // 状态
+    const state = {
+      currentStep: 1, loggedIn: false, completedSteps: new Set(),
+      demandForecast: { "华北总代": 24000, "华中总代": 28000, "日本总代": 16500, "西北总代": 15500 },
+      productionPlan: { "广州蓄电池厂": 86520, "苏州蓄电池厂": 105060 },
+      materialRequirements: { "电极板": 0, "电解液": 0, "电池壳": 0 },
+      selectedSuppliers: {}, selectedRoutes: {}, routeQuantities: {},
+      simulationRun: false, simulationResult: null
+    };
+
+    // DOM
+    const loginScreen = document.getElementById('loginScreen');
+    const dashboard = document.getElementById('dashboard');
+    const stepContent = document.getElementById('stepContent');
+    const stepBtns = document.querySelectorAll('.step-btn');
+
+    function notify(msg) {
+      const n = document.createElement('div'); n.className = 'notification';
+      n.innerHTML = `<i class="fas fa-check-circle"></i> ${msg}`;
+      document.body.appendChild(n);
+      setTimeout(() => n.remove(), 2800);
+    }
+
+    // 登录
+    document.getElementById('loginBtn').addEventListener('click', ()=>{
+      const u = document.getElementById('username').value.trim();
+      const p = document.getElementById('password').value.trim();
+      if (u === 'EMAdmin' && p === 'supply2024') {
+        state.loggedIn = true; state.completedSteps.add(1);
+        loginScreen.classList.add('hidden');
+        dashboard.classList.add('active');
+        navigateToStep(2);
+        notify('登录成功 · 3D虚拟仿真已启动');
+      } else alert('用户名或密码错误');
+    });
+
+    stepBtns.forEach(btn => {
+      btn.addEventListener('click', function() {
+        if (!state.loggedIn) return;
+        const step = parseInt(this.dataset.step);
+        if (step <= Math.max(...Array.from(state.completedSteps), state.currentStep) + 1 || state.completedSteps.has(step)) {
+          navigateToStep(step);
+        } else notify('请按顺序完成步骤');
+      });
+    });
+
+    function navigateToStep(step) {
+      state.currentStep = step;
+      updateStepUI();
+      renderStep(step);
+      stepContent.scrollIntoView({ behavior: 'smooth' });
+    }
+    function updateStepUI() {
+      stepBtns.forEach(btn => {
+        const s = parseInt(btn.dataset.step);
+        btn.classList.remove('active','completed');
+        if (s === state.currentStep) btn.classList.add('active');
+        if (state.completedSteps.has(s)) btn.classList.add('completed');
+      });
+    }
+    function completeStep(step) {
+      state.completedSteps.add(step);
+      updateStepUI();
+      const names = { 2:'数据',3:'需求',4:'生产',5:'物料',6:'供应商',7:'物流',8:'孪生',9:'成绩',10:'复盘' };
+      notify(`步骤${step}：${names[step]||''} 完成`);
+    }
+
+    // ========== 渲染 ==========
+    function renderStep(step) {
+      let html = '';
+      switch(step) {
+        case 1: html = `<h2><i class="fas fa-check-circle" style="color:#00ff88;"></i> 登录成功</h2><p>欢迎进入 <strong>EM蓄电池 · 3D虚拟仿真</strong></p><div class="flex-row"><div class="card"><i class="fas fa-calendar-alt"></i> 周期60天</div><div class="card"><i class="fas fa-industry"></i> 广州、苏州工厂</div><div class="card"><i class="fas fa-store"></i> 4个销售点</div></div><button class="primary" onclick="window._nav(2)">开始实验 →</button>`; break;
+        case 2: {
+          let pts = MASTER_DATA.salesPoints.map(p => `<tr><td>${p.id}</td><td>${p.inventory}件</td><td>${p.history.join(', ')}</td><td><strong>${p.forecast}件</strong></td><td>${p.cap}件</td></tr>`).join('');
+          let sup = MASTER_DATA.suppliers.map(s => `<tr><td>${s.id}</td><td>${s.material}</td><td>${s.available}${s.unit}</td><td>${s.price} ${s.currency}</td></tr>`).join('');
+          html = `<h2><i class="fas fa-file-alt"></i> 步骤2：案例数据</h2><h3>销售网点</h3><table>${pts}</table><h3 style="margin-top:1rem;">供应商</h3><table>${sup}</table><div class="card"><h4>评分标准</h4><p>采购成本+物流成本+市场满足率+生产满足率+预测偏差</p></div><label><input type="checkbox" id="understandData"> 我已阅读并理解</label><button class="primary" id="confirmStep2">确认下一步</button>`; break;
+        }
+        case 3: {
+          let sliders = MASTER_DATA.salesPoints.map(p => `
+            <div class="card"><strong>${p.id}</strong> 历史月均：${Math.round(p.history.reduce((a,b)=>a+b,0)/6)}件
+            <div class="slider-group"><label>预测量：<span id="${p.id}_val">${state.demandForecast[p.id]}</span> 件</label>
+            <input type="range" id="${p.id}_slider" min="10000" max="40000" value="${state.demandForecast[p.id]}" step="100"></div>
+            <div class="progress-bar"><div class="progress-fill" style="width:${(state.demandForecast[p.id]/40000)*100}%"></div></div></div>
+          `).join('');
+          html = `<h2><i class="fas fa-chart-line"></i> 步骤3：需求预测</h2><div class="flex-row">${sliders}</div><div id="demandChart" style="height:260px; width:100%; margin-top:0.8rem;"></div><button class="primary" id="saveForecast">保存预测</button><button class="secondary" id="resetForecast">恢复默认</button>`;
+          break;
+        }
+        case 4: {
+          let totalDemand = Object.values(state.demandForecast).reduce((a,b)=>a+b,0);
+          let facs = MASTER_DATA.factories.production.map(f => `
+            <div class="card"><h4>${f.factory}</h4><p>日产能：${f.daily}件 | 库存：${f.stock}件</p><p>最大60天：${f.total}件</p>
+            <label>计划产量：<input type="number" id="${f.factory}_prod" value="${state.productionPlan[f.factory]||f.total}" min="0" max="${f.total}" step="100"></label></div>
+          `).join('');
+          html = `<h2><i class="fas fa-industry"></i> 步骤4：生产补货</h2><p>总需求预测：<strong>${totalDemand}</strong> 件</p><div class="flex-row">${facs}</div><div id="replenishmentDisplay"></div><button class="primary" id="confirmProduction">确认计划</button>`;
+          break;
+        }
+        case 5: {
+          let totalProd = Object.values(state.productionPlan).reduce((a,b)=>a+b,0);
+          const bomItems = [
+            { name: "电极板", qty: totalProd * 2, unit: "组", desc: "正负极板栅" },
+            { name: "电解液", qty: (totalProd * 0.1).toFixed(1), unit: "桶", desc: "硫酸溶液" },
+            { name: "电池壳", qty: totalProd, unit: "个", desc: "PP外壳" }
+          ];
+          state.materialRequirements = { "电极板": totalProd * 2, "电解液": parseFloat((totalProd * 0.1).toFixed(1)), "电池壳": totalProd };
+
+          let bomHtml = `
+            <div class="bom-table">
+              <h4 style="margin-bottom:0.5rem;"><i class="fas fa-table"></i> BOM 物料清单 (每件蓄电池)</h4>
+              <table>
+                <thead><tr><th>物料名称</th><th>用量</th><th>单位</th><th>说明</th></tr></thead>
+                <tbody>
+                  <tr><td>电极板</td><td>2</td><td>组</td><td>正负极板栅</td></tr>
+                  <tr><td>电解液</td><td>0.1</td><td>桶</td><td>硫酸溶液</td></tr>
+                  <tr><td>电池壳</td><td>1</td><td>个</td><td>PP外壳</td></tr>
+                </tbody>
+              </table>
+              <h4 style="margin-top:0.8rem; margin-bottom:0.4rem;"><i class="fas fa-calculator"></i> 总需求 (基于 ${totalProd} 件产量)</h4>
+              <table>
+                <thead><tr><th>物料</th><th>总需求量</th><th>单位</th></tr></thead>
+                <tbody>
+                  ${bomItems.map(item => `<tr><td>${item.name}</td><td><strong>${item.qty}</strong></td><td>${item.unit}</td></tr>`).join('')}
+                </tbody>
+              </table>
+            </div>
+          `;
+
+          html = `<h2><i class="fas fa-cubes"></i> 步骤5：物料需求 (BOM)</h2>
+            <div class="card">${bomHtml}</div>
+            <div class="card" style="margin-top:0.6rem;">
+              <h4>手动调整物料需求量</h4>
+              ${Object.keys(state.materialRequirements).map(m => `<label style="margin-right:1rem;">${m}：<input type="number" id="mat_${m}" value="${state.materialRequirements[m]}" step="1" style="width:100px;"> ${m==='电极板'?'组':m==='电解液'?'桶':'个'}</label>`).join(' ')}
+            </div>
+            <button class="primary" id="confirmBOM">确认物料需求</button>`;
+          break;
+        }
+        case 6: {
+          let cards = MASTER_DATA.suppliers.map(s => {
+            let sel = state.selectedSuppliers[s.id] ? 'selected' : '';
+            return `<div class="supplier-card ${sel}" data-id="${s.id}"><span><strong>${s.id}</strong> <span class="tag">${s.material}</span></span><span>${s.available}${s.unit} | ${s.price}${s.currency}</span><i class="fas ${sel?'fa-check-circle':'fa-circle'}" style="color:${sel?'#00ff88':'#555'}"></i></div>`;
+          }).join('');
+          let selectedList = Object.keys(state.selectedSuppliers).length ? Object.keys(state.selectedSuppliers).map(id => {
+            let s = MASTER_DATA.suppliers.find(sp=>sp.id===id); return `<span class="tag">${s.id}</span>`;
+          }).join(' ') : '<p>未选择</p>';
+          html = `<h2><i class="fas fa-truck"></i> 步骤6：供应商选择</h2><div id="supplierList">${cards}</div><div class="card"><h4>已选供应商</h4><div id="selectedSuppliersDisplay">${selectedList}</div></div>
+            <button class="primary" id="confirmSuppliers">确认供应商</button>`;
+          break;
+        }
+        case 7: {
+          let routesHtml = MASTER_DATA.routes.map(r => {
+            let qty = state.routeQuantities[r.id] || 0, sel = state.selectedRoutes[r.id] ? 'selected' : '';
+            return `<div class="route-item ${sel}" data-id="${r.id}"><i class="fas ${r.mode==='汽运'?'fa-truck':'fa-ship'}"></i> <strong>${r.from} → ${r.to}</strong> | ${r.dist}km | ${r.mode} | ${r.days}天<br><label>运输量：<input type="number" class="route-qty" data-route="${r.id}" value="${qty}" min="0" step="10" style="width:90px;"></label><i class="fas ${sel?'fa-check-circle':'fa-circle'}" style="float:right;color:${sel?'#00ff88':'#555'}"></i></div>`;
+          }).join('');
+          html = `<h2><i class="fas fa-ship"></i> 步骤7：物流计划</h2><div id="routesList">${routesHtml}</div><div id="routeMap" style="height:280px; margin-top:0.8rem;"></div><button class="primary" id="confirmRoutes">确认物流计划</button>`;
+          break;
+        }
+        case 8: {
+          let totalDemand = Object.values(state.demandForecast).reduce((a,b)=>a+b,0);
+          let totalProd = Object.values(state.productionPlan).reduce((a,b)=>a+b,0);
+          html = `<h2><i class="fas fa-play"></i> 步骤8：数字孪生模拟</h2>
+            <div class="twin-panel">
+              <div class="card"><h4>参数调节</h4>
+                <div class="slider-group"><label>锂矿指数：<span id="lithiumVal">100</span></label><input type="range" id="lithiumSlider" min="50" max="150" value="100"></div>
+                <div class="slider-group"><label>海运周期：<span id="shippingVal">25</span></label><input type="range" id="shippingSlider" min="15" max="45" value="25"></div>
+                <div class="slider-group"><label>良品率：<span id="yieldVal">92</span>%</label><input type="range" id="yieldSlider" min="80" max="99" value="92"></div>
+                <div class="slider-group"><label>回收率：<span id="recycleVal">35</span>%</label><input type="range" id="recycleSlider" min="0" max="70" value="35"></div>
+              </div>
+              <div class="card"><h4>实时指标</h4><div class="gauge-grid"><div class="gauge-item">电池成本<br><span class="value" id="twinCost">90.0</span> $/kWh</div><div class="gauge-item">碳排放<br><span class="value" id="twinCarbon">85.0</span> kgCO2</div><div class="gauge-item">供应周期<br><span class="value" id="twinDays">45.0</span> 天</div></div></div>
+            </div>
+            <div class="map3d-card" id="supplierMap3d"></div>
+            <div id="twinChart" style="height:220px; margin-top:0.8rem;"></div>
+            <div class="card"><h4>配置摘要</h4><p>总需求：${totalDemand}件 | 总生产：${totalProd}件 | 供应商：${Object.keys(state.selectedSuppliers).length}家 | 路线：${Object.keys(state.selectedRoutes).length}条</p></div>
+            <button class="primary" id="runFullSim">?? 运行60天模拟</button>
+            <div id="simResultText" class="hidden"></div>
+            <button class="secondary hidden" id="viewResults">查看成绩 →</button>`;
+          break;
+        }
+        case 9: {
+          if (!state.simulationResult) html = `<h2><i class="fas fa-trophy"></i> 步骤9：成绩</h2><p>尚未模拟，请先完成步骤8。</p><button class="primary" onclick="window._nav(8)">返回模拟</button>`;
+          else {
+            const r = state.simulationResult;
+            html = `<h2><i class="fas fa-trophy"></i> 步骤9：实验成绩</h2><div class="gauge-grid">
+              <div class="gauge-item"><h4>采购成本</h4><span class="value">${r.unitProcCost}</span><p>得分：${r.procScore}/25</p></div>
+              <div class="gauge-item"><h4>物流成本</h4><span class="value">${r.unitLogCost}</span><p>得分：${r.logScore}/25</p></div>
+              <div class="gauge-item"><h4>市场满足率</h4><span class="value">${r.fillRate}%</span><p>得分：${r.fillScore}/20</p></div>
+              <div class="gauge-item"><h4>生产满足率</h4><span class="value">${r.prodRate}%</span><p>得分：${r.prodScore}/15</p></div>
+              <div class="gauge-item"><h4>预测偏差</h4><span class="value">${r.deviation}%</span><p>得分：${r.devScore}/15</p></div>
+            </div><div class="card" style="text-align:center;"><h3>总分：<span style="color:#00ff88; font-size:2.2rem;">${r.totalScore}</span> / 100</h3></div><button class="primary" id="goToReview">进入复盘</button>`;
+          }
+          break;
+        }
+        case 10: {
+          let totalDemand = Object.values(state.demandForecast).reduce((a,b)=>a+b,0);
+          let totalProd = Object.values(state.productionPlan).reduce((a,b)=>a+b,0);
+          let totalMat = Object.values(state.materialRequirements).reduce((a,b)=>a+b,0);
+          let supCnt = Object.keys(state.selectedSuppliers).length;
+          let routeCnt = Object.keys(state.selectedRoutes).length;
+          let transQty = Object.values(state.routeQuantities).reduce((a,b)=>a+(parseInt(b)||0),0);
+          let fillRate = state.simulationResult ? state.simulationResult.fillRate : (totalProd/totalDemand*100).toFixed(1);
+          html = `<h2><i class="fas fa-redo"></i> 步骤10：复盘分析</h2>
+            <div id="reviewFlowChart" style="height:340px; margin:0.8rem 0;"></div>
+            <div class="flex-row"><div class="card"><h4>关键数字</h4><table><tr><td>总需求</td><td><strong>${totalDemand.toLocaleString()}</strong></td></tr><tr><td>总生产</td><td><strong>${totalProd.toLocaleString()}</strong></td></tr><tr><td>物料需求</td><td><strong>${totalMat.toLocaleString()}</strong></td></tr><tr><td>供应商</td><td><strong>${supCnt}家</strong></td></tr><tr><td>运输路线</td><td><strong>${routeCnt}条</strong></td></tr><tr><td>运输量</td><td><strong>${transQty.toLocaleString()}</strong></td></tr></table></div>
+              <div class="card"><h4>优化建议</h4>${state.simulationResult ? (()=>{ let s=[]; if(state.simulationResult.fillRate<95) s.push('市场满足率偏低，建议增产或优化物流'); if(parseFloat(state.simulationResult.deviation)>10) s.push('预测偏差较大，调整预测模型'); if(parseFloat(state.simulationResult.unitProcCost)>5) s.push('采购成本偏高，考虑更低价格供应商'); if(s.length===0) s.push('各项指标良好，尝试微调参数'); return s.map(t=>`<li>${t}</li>`).join(''); })() : '<p>运行模拟后显示建议</p>'}</div>
+            </div>
+            <div class="card"><h4>复盘笔记</h4><textarea id="reviewNotes" style="width:100%; height:70px; background:#0b1424; color:white; border:1px solid #2a3a55; border-radius:0.8rem; padding:0.6rem;"></textarea></div>
+            <button class="primary" id="saveReview">保存笔记</button><button class="secondary" id="resetExperiment">?? 再来一次</button>`;
+          break;
+        }
+        default: html = '<p>未知步骤</p>';
+      }
+      stepContent.innerHTML = html;
+      bindEvents(step);
+      if (step === 3) initDemandChart();
+      if (step === 7) initRouteMap();
+      if (step === 8) { initTwinDashboard(); updateTwinMetrics(); initSupplierMap3D(); }
+      if (step === 10) initReviewFlowChart();
+    }
+
+    // ========== 事件绑定 ==========
+    function bindEvents(step) {
+      if (step === 2) {
+        document.getElementById('confirmStep2')?.addEventListener('click', ()=>{
+          if (document.getElementById('understandData')?.checked) { completeStep(2); navigateToStep(3); }
+          else alert('请先确认已阅读数据');
+        });
+      }
+      if (step === 3) {
+        document.querySelectorAll('[id$="_slider"]').forEach(sl => {
+          sl.addEventListener('input', function() {
+            const id = this.id.replace('_slider','');
+            const valEl = document.getElementById(id+'_val');
+            if (valEl) valEl.textContent = this.value;
+            state.demandForecast[id] = parseInt(this.value);
+            updateDemandChart();
+          });
+        });
+        document.getElementById('saveForecast')?.addEventListener('click', ()=>{ completeStep(3); notify('需求预测已保存'); });
+        document.getElementById('resetForecast')?.addEventListener('click', ()=>{
+          MASTER_DATA.salesPoints.forEach(p=>{ state.demandForecast[p.id]=p.forecast; const sl=document.getElementById(p.id+'_slider'); if(sl) sl.value=p.forecast; const v=document.getElementById(p.id+'_val'); if(v) v.textContent=p.forecast; });
+          updateDemandChart();
+        });
+      }
+      if (step === 4) {
+        document.querySelectorAll('[id$="_prod"]').forEach(inp => {
+          inp.addEventListener('input', function() {
+            const factory = this.id.replace('_prod','');
+            state.productionPlan[factory] = parseInt(this.value) || 0;
+            updateReplenishmentDisplay();
+          });
+        });
+        document.getElementById('confirmProduction')?.addEventListener('click', ()=>{ completeStep(4); navigateToStep(5); });
+        updateReplenishmentDisplay();
+      }
+      if (step === 5) {
+        document.querySelectorAll('[id^="mat_"]').forEach(inp => {
+          inp.addEventListener('input', function() {
+            const mat = this.id.replace('mat_','');
+            state.materialRequirements[mat] = parseFloat(this.value) || 0;
+          });
+        });
+        document.getElementById('confirmBOM')?.addEventListener('click', ()=>{ completeStep(5); navigateToStep(6); });
+      }
+      if (step === 6) {
+        document.querySelectorAll('.supplier-card').forEach(card => {
+          card.addEventListener('click', function() {
+            const id = this.dataset.id;
+            if (state.selectedSuppliers[id]) { delete state.selectedSuppliers[id]; this.classList.remove('selected'); }
+            else { state.selectedSuppliers[id]=true; this.classList.add('selected'); }
+            updateSelectedSuppliersDisplay();
+          });
+        });
+        document.getElementById('confirmSuppliers')?.addEventListener('click', ()=>{
+          if (Object.keys(state.selectedSuppliers).length===0) { alert('至少选择一家供应商'); return; }
+          completeStep(6); navigateToStep(7);
+        });
+      }
+      if (step === 7) {
+        document.querySelectorAll('.route-item').forEach(item => {
+          item.addEventListener('click', function(e) {
+            if (e.target.tagName === 'INPUT') return;
+            const id = this.dataset.id;
+            if (state.selectedRoutes[id]) { delete state.selectedRoutes[id]; this.classList.remove('selected'); }
+            else { state.selectedRoutes[id]=true; this.classList.add('selected'); }
+          });
+        });
+        document.querySelectorAll('.route-qty').forEach(inp => {
+          inp.addEventListener('input', function() { state.routeQuantities[this.dataset.route] = parseInt(this.value)||0; });
+          inp.addEventListener('click', e=>e.stopPropagation());
+        });
+        document.getElementById('confirmRoutes')?.addEventListener('click', ()=>{
+          if (Object.keys(state.selectedRoutes).length===0) { alert('至少选择一条路线'); return; }
+          completeStep(7); navigateToStep(8);
+        });
+      }
+      if (step === 8) {
+        ['lithium','shipping','yield','recycle'].forEach(id => {
+          document.getElementById(id+'Slider')?.addEventListener('input', updateTwinMetrics);
+        });
+        document.getElementById('runFullSim')?.addEventListener('click', runSimulation);
+        document.getElementById('viewResults')?.addEventListener('click', ()=>navigateToStep(9));
+      }
+      if (step === 9) {
+        document.getElementById('goToReview')?.addEventListener('click', ()=>{ completeStep(9); navigateToStep(10); });
+      }
+      if (step === 10) {
+        document.getElementById('saveReview')?.addEventListener('click', ()=>{
+          const notes = document.getElementById('reviewNotes')?.value||'';
+          completeStep(10);
+          notify('复盘笔记已保存！实验完成。');
+        });
+        document.getElementById('resetExperiment')?.addEventListener('click', resetExperiment);
+      }
+    }
+
+    // ========== 辅助函数 ==========
+    function updateReplenishmentDisplay() {
+      const display = document.getElementById('replenishmentDisplay');
+      if (!display) return;
+      const totalProd = Object.values(state.productionPlan).reduce((a,b)=>a+b,0);
+      const totalDemand = Object.values(state.demandForecast).reduce((a,b)=>a+b,0);
+      let html = '<table><tr><th>网点</th><th>预测需求</th><th>建议补货</th></tr>';
+      MASTER_DATA.salesPoints.forEach(p => {
+        const ratio = state.demandForecast[p.id]/totalDemand;
+        html += `<tr><td>${p.id}</td><td>${state.demandForecast[p.id]}件</td><td>${Math.round(totalProd*ratio)}件</td></tr>`;
+      });
+      html += '</table>';
+      display.innerHTML = html;
+    }
+    function updateSelectedSuppliersDisplay() {
+      const display = document.getElementById('selectedSuppliersDisplay');
+      if (!display) return;
+      const sel = Object.keys(state.selectedSuppliers);
+      if (!sel.length) { display.innerHTML = '<p>未选择</p>'; return; }
+      display.innerHTML = sel.map(id => {
+        const s = MASTER_DATA.suppliers.find(sp=>sp.id===id);
+        return `<span class="tag">${s.id}</span>`;
+      }).join(' ');
+    }
+    function updateDemandChart() {
+      const dom = document.getElementById('demandChart');
+      if (!dom) return;
+      const chart = echarts.getInstanceByDom(dom) || echarts.init(dom);
+      chart.setOption({
+        backgroundColor: 'transparent',
+        xAxis: { data: MASTER_DATA.salesPoints.map(p=>p.id), axisLabel:{color:'#ccc'} },
+        yAxis: { axisLabel:{color:'#ccc'} },
+        series: [{ data: MASTER_DATA.salesPoints.map(p=>state.demandForecast[p.id]), type: 'bar', color: '#00d2ff', itemStyle:{borderRadius:[6,6,0,0]} }]
+      });
+    }
+    function initDemandChart() { updateDemandChart(); }
+    function initRouteMap() {
+      const dom = document.getElementById('routeMap');
+      if (!dom) return;
+      const chart = echarts.init(dom);
+      const nodes=[], links=[], nodeMap={};
+      MASTER_DATA.routes.forEach(r => {
+        if (!nodeMap[r.from]) { nodeMap[r.from]=true; nodes.push({name:r.from, x:Math.random()*500, y:Math.random()*200}); }
+        if (!nodeMap[r.to]) { nodeMap[r.to]=true; nodes.push({name:r.to, x:Math.random()*500, y:Math.random()*200}); }
+      });
+      MASTER_DATA.routes.forEach(r => {
+        const fromIdx = nodes.findIndex(n=>n.name===r.from), toIdx = nodes.findIndex(n=>n.name===r.to);
+        const sel = state.selectedRoutes[r.id];
+        links.push({ source: fromIdx, target: toIdx, label: {show:true, formatter:`${r.dist}km`, color:'#aaa'}, lineStyle: {color: sel?'#00ff88':'#00d2ff', width: sel?2:1} });
+      });
+      chart.setOption({
+        backgroundColor: 'transparent',
+        series: [{ type: 'graph', layout: 'force', roam: true, data: nodes, links, force: { repulsion: 400, edgeLength: [160,300] }, lineStyle:{curveness:0.2}, label:{show:true,color:'#ccc',fontSize:10}, itemStyle:{color:'#00ff88'} }]
+      });
+    }
+    function updateTwinMetrics() {
+      const li = parseInt(document.getElementById('lithiumSlider')?.value)||100;
+      const sh = parseInt(document.getElementById('shippingSlider')?.value)||25;
+      const yi = parseInt(document.getElementById('yieldSlider')?.value)||92;
+      const re = parseInt(document.getElementById('recycleSlider')?.value)||35;
+      document.getElementById('lithiumVal').textContent = li;
+      document.getElementById('shippingVal').textContent = sh;
+      document.getElementById('yieldVal').textContent = yi;
+      document.getElementById('recycleVal').textContent = re;
+      const cost = (90*(li/100)*(1+(sh-15)/100) - 5*((yi-80)/19) - 8*(re/70)).toFixed(1);
+      const carbon = (80 + (sh-15)*0.5 - re*0.4).toFixed(1);
+      const days = (45 + (sh-15) - (yi-80)*0.3).toFixed(1);
+      document.getElementById('twinCost').textContent = cost;
+      document.getElementById('twinCarbon').textContent = carbon;
+      document.getElementById('twinDays').textContent = days;
+    }
+    function initTwinDashboard() {
+      const dom = document.getElementById('twinChart');
+      if (!dom) return;
+      const chart = echarts.init(dom);
+      chart.setOption({
+        backgroundColor:'transparent',
+        title: { text:'绩效雷达', left:'center', textStyle:{color:'#ccc', fontSize:13} },
+        radar: { indicator: [ {name:'采购效率',max:100}, {name:'生产效率',max:100}, {name:'物流效率',max:100}, {name:'销售达成',max:100}, {name:'回收利用',max:100} ], axisName:{color:'#ccc'} },
+        series: [{ type:'radar', data:[{ value:[85,92,78,88,65], name:'当前方案', areaStyle:{color:'rgba(0,255,136,0.2)'}, lineStyle:{color:'#00ff88'} }] }]
+      });
+    }
+    function initReviewFlowChart() {
+      const dom = document.getElementById('reviewFlowChart');
+      if (!dom) return;
+      const totalDemand = Object.values(state.demandForecast).reduce((a,b)=>a+b,0);
+      const totalProd = Object.values(state.productionPlan).reduce((a,b)=>a+b,0);
+      const totalMat = Object.values(state.materialRequirements).reduce((a,b)=>a+b,0);
+      const supCnt = Object.keys(state.selectedSuppliers).length;
+      const routeCnt = Object.keys(state.selectedRoutes).length;
+      const transQty = Object.values(state.routeQuantities).reduce((a,b)=>a+(parseInt(b)||0),0);
+      const fillRate = state.simulationResult ? state.simulationResult.fillRate : (totalProd/totalDemand*100).toFixed(1);
+      const chart = echarts.init(dom);
+      const data = [
+        { name: `供应商\n(${supCnt}家)` },
+        { name: `原料入库\n(${totalMat.toLocaleString()})` },
+        { name: `工厂生产\n(${totalProd.toLocaleString()})` },
+        { name: `物流运输\n(${routeCnt}条)` },
+        { name: `销售网点\n(${fillRate}%)` }
+      ];
+      const links = [
+        { source: data[0].name, target: data[1].name, value: totalMat || 1 },
+        { source: data[1].name, target: data[2].name, value: totalProd || 1 },
+        { source: data[2].name, target: data[3].name, value: transQty || totalProd || 1 },
+        { source: data[3].name, target: data[4].name, value: transQty || totalProd || 1 }
+      ];
+      chart.setOption({
+        backgroundColor:'transparent',
+        title: { text:'供应链流动', left:'center', textStyle:{color:'#00d2ff', fontSize:13} },
+        tooltip: { trigger:'item' },
+        series: [{
+          type:'sankey', layout:'none', emphasis:{focus:'adjacency'},
+          nodeAlign:'left', data, links,
+          label:{color:'#ccc',fontSize:10},
+          lineStyle:{color:'gradient',curveness:0.5},
+          itemStyle:{borderWidth:1,borderColor:'#aaa'},
+          levels: [
+            { depth:0, itemStyle:{color:'#00d2ff'} },
+            { depth:1, itemStyle:{color:'#0099cc'} },
+            { depth:2, itemStyle:{color:'#00ff88'} },
+            { depth:3, itemStyle:{color:'#ffaa00'} },
+            { depth:4, itemStyle:{color:'#ff6688'} }
+          ]
+        }]
+      });
+    }
+
+    // ========== 3D供应商地图 ==========
+    function initSupplierMap3D() {
+      const container = document.getElementById('supplierMap3d');
+      if (!container) return;
+      while (container.firstChild) container.removeChild(container.firstChild);
+      const width = container.clientWidth || 400;
+      const height = container.clientHeight || 260;
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0a1428);
+      const camera = new THREE.PerspectiveCamera(40, width/height, 0.1, 100);
+      camera.position.set(5, 3, 8);
+      camera.lookAt(0, 0, 0);
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(width, height);
+      renderer.shadowMap.enabled = true;
+      container.appendChild(renderer.domElement);
+
+      const ambient = new THREE.AmbientLight(0x404060);
+      scene.add(ambient);
+      const dirLight = new THREE.DirectionalLight(0xffeedd, 1.2);
+      dirLight.position.set(4, 8, 6);
+      dirLight.castShadow = true;
+      scene.add(dirLight);
+      const fill = new THREE.DirectionalLight(0x4488ff, 0.5);
+      fill.position.set(-3, 2, 5);
+      scene.add(fill);
+
+      const gridHelper = new THREE.GridHelper(8, 12, 0x00d2ff, 0x336699);
+      gridHelper.position.y = -1.2;
+      scene.add(gridHelper);
+
+      const supplierPositions = [
+        { name: '石家庄', pos: [-1.2, 0.8, 1.5] },
+        { name: '宝鸡', pos: [-1.8, -0.2, -0.5] },
+        { name: '四川', pos: [0.5, -0.6, -1.8] },
+        { name: '贵阳', pos: [1.2, 0.2, -1.2] },
+        { name: '常州', pos: [2.2, 0.6, 0.5] },
+        { name: '东莞', pos: [1.5, -0.4, 1.8] }
+      ];
+      const extraNodes = [
+        { name: '广州厂', pos: [0.2, 1.2, 0.8] },
+        { name: '苏州厂', pos: [1.0, 0.9, -0.2] },
+        { name: '华北', pos: [-1.5, 0.2, 2.5] },
+        { name: '华中', pos: [-0.5, -0.3, 2.8] },
+        { name: '日本', pos: [2.8, 0.5, -1.0] },
+        { name: '西北', pos: [-2.5, 0.0, -1.5] }
+      ];
+      const allNodes = [...supplierPositions, ...extraNodes];
+      allNodes.forEach((n, i) => {
+        const size = i < supplierPositions.length ? 0.45 : 0.3;
+        const color = i < supplierPositions.length ? 0xffaa44 : 0x44ccff;
+        const geo = new THREE.SphereGeometry(size, 20, 20);
+        const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.3, roughness: 0.3, metalness: 0.5 });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(n.pos[0], n.pos[1], n.pos[2]);
+        mesh.castShadow = true;
+        scene.add(mesh);
+        const ringGeo = new THREE.RingGeometry(size*1.4, size*1.8, 16);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0x00d2ff, transparent: true, opacity: 0.2, side: THREE.DoubleSide });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.position.set(n.pos[0], n.pos[1]-0.1, n.pos[2]);
+        ring.rotation.x = -Math.PI/2;
+        scene.add(ring);
+      });
+
+      const lines = [
+        ['石家庄', '广州厂'], ['宝鸡', '广州厂'], ['四川', '广州厂'], ['贵阳', '广州厂'], ['常州', '苏州厂'], ['东莞', '苏州厂']
+      ];
+      lines.forEach(([from, to]) => {
+        const fromNode = allNodes.find(n => n.name === from);
+        const toNode = allNodes.find(n => n.name === to);
+        if (!fromNode || !toNode) return;
+        const points = [
+          new THREE.Vector3(fromNode.pos[0], fromNode.pos[1], fromNode.pos[2]),
+          new THREE.Vector3(toNode.pos[0], toNode.pos[1], toNode.pos[2])
+        ];
+        const geo = new THREE.BufferGeometry().setFromPoints(points);
+        const mat = new THREE.LineBasicMaterial({ color: 0x88ddff, transparent: true, opacity: 0.25 });
+        const line = new THREE.Line(geo, mat);
+        scene.add(line);
+      });
+
+      const controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.08;
+      controls.autoRotate = true;
+      controls.autoRotateSpeed = 0.6;
+      controls.target.set(0, 0.2, 0);
+      controls.enableZoom = true;
+      controls.enablePan = false;
+
+      function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      const resize = () => {
+        const w = container.clientWidth, h = container.clientHeight;
+        if (w > 0 && h > 0) {
+          camera.aspect = w/h;
+          camera.updateProjectionMatrix();
+          renderer.setSize(w, h);
+        }
+      };
+      window.addEventListener('resize', resize);
+      const observer = new ResizeObserver(resize);
+      observer.observe(container);
+    }
+
+    // ========== 模拟与重置 ==========
+    function runSimulation() {
+      const totalDemand = Object.values(state.demandForecast).reduce((a,b)=>a+b,0);
+      const totalProd = Object.values(state.productionPlan).reduce((a,b)=>a+b,0);
+      const fillRate = Math.min(100, (totalProd/totalDemand)*100).toFixed(1);
+      const prodRate = Math.min(100, (totalProd/MASTER_DATA.factories.production.reduce((a,f)=>a+f.total,0))*100).toFixed(1);
+      let totalDev = 0;
+      MASTER_DATA.salesPoints.forEach(p => {
+        const forecast = state.demandForecast[p.id];
+        const actual = p.history.reduce((a,b)=>a+b,0)/6;
+        totalDev += Math.abs((forecast - actual)/actual);
+      });
+      const deviationRate = ((totalDev/MASTER_DATA.salesPoints.length)*100).toFixed(1);
+      state.simulationResult = {
+        unitProcCost: (3.2 + Math.random()*1.6).toFixed(2),
+        unitLogCost: (1.0 + Math.random()*1.2).toFixed(2),
+        fillRate, prodRate, deviation: deviationRate,
+        procScore: Math.floor(18+Math.random()*7),
+        logScore: Math.floor(18+Math.random()*7),
+        fillScore: Math.floor(14+Math.random()*6),
+        prodScore: Math.floor(10+Math.random()*5),
+        devScore: Math.floor(10+Math.random()*5),
+        totalScore: 0
+      };
+      state.simulationResult.totalScore = state.simulationResult.procScore + state.simulationResult.logScore +
+        state.simulationResult.fillScore + state.simulationResult.prodScore + state.simulationResult.devScore;
+      state.simulationRun = true;
+      completeStep(8);
+      const el = document.getElementById('simResultText');
+      if (el) { el.classList.remove('hidden'); el.innerHTML = `<div class="card"><h4>模拟完成</h4><p>市场满足率：${fillRate}% | 生产满足率：${prodRate}% | 偏差率：${deviationRate}%</p></div>`; }
+      document.getElementById('viewResults')?.classList.remove('hidden');
+      notify('60天模拟运行完成！');
+    }
+
+    function resetExperiment() {
+      state.currentStep = 1; state.completedSteps = new Set([1]);
+      state.demandForecast = { "华北总代":24000, "华中总代":28000, "日本总代":16500, "西北总代":15500 };
+      state.productionPlan = { "广州蓄电池厂":86520, "苏州蓄电池厂":105060 };
+      state.materialRequirements = { "电极板":0, "电解液":0, "电池壳":0 };
+      state.selectedSuppliers = {}; state.selectedRoutes = {}; state.routeQuantities = {};
+      state.simulationRun = false; state.simulationResult = null;
+      updateStepUI(); navigateToStep(2);
+      notify('实验已重置');
+    }
+    window._nav = navigateToStep;
+    updateStepUI();
+
+    // ========== 全局3D背景 ==========
+    (function initGlobal3D() {
+      const container = document.getElementById('three-container');
+      if (!container) return;
+      const width = container.clientWidth, height = container.clientHeight;
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x080c18);
+      const camera = new THREE.PerspectiveCamera(40, width/height, 0.1, 100);
+      camera.position.set(5, 3, 12);
+      camera.lookAt(0, 0, 0);
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      renderer.setSize(width, height);
+      renderer.shadowMap.enabled = true;
+      container.appendChild(renderer.domElement);
+      const controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.autoRotate = true;
+      controls.autoRotateSpeed = 0.4;
+      controls.enableZoom = false;
+      controls.enablePan = false;
+      controls.target.set(0, 0, 0);
+      const ambient = new THREE.AmbientLight(0x404060);
+      scene.add(ambient);
+      const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+      dirLight.position.set(3, 8, 5);
+      scene.add(dirLight);
+      const core = new THREE.Mesh(
+        new THREE.SphereGeometry(0.8, 48, 48),
+        new THREE.MeshStandardMaterial({ color: 0x00d2ff, emissive: 0x006688, roughness: 0.2, metalness: 0.6, emissiveIntensity: 0.5 })
+      );
+      core.castShadow = true;
+      scene.add(core);
+      for (let i = 0; i < 40; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        const r = 1.8 + Math.random() * 1.2;
+        const x = r * Math.sin(phi) * Math.cos(theta);
+        const y = r * Math.sin(phi) * Math.sin(theta);
+        const z = r * Math.cos(phi);
+        const dot = new THREE.Mesh(
+          new THREE.SphereGeometry(0.04 + Math.random()*0.06, 6, 6),
+          new THREE.MeshBasicMaterial({ color: 0x88ccff })
+        );
+        dot.position.set(x, y, z);
+        scene.add(dot);
+      }
+      const particles = new THREE.BufferGeometry();
+      const pos = new Float32Array(400 * 3);
+      for (let i=0; i<400*3; i++) pos[i] = (Math.random()-0.5)*25;
+      particles.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      const pMat = new THREE.PointsMaterial({ color: 0x4488ff, size: 0.04, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending });
+      const pSys = new THREE.Points(particles, pMat);
+      scene.add(pSys);
+      function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        core.rotation.y += 0.002;
+        renderer.render(scene, camera);
+      }
+      animate();
+      window.addEventListener('resize', ()=>{
+        const w = container.clientWidth, h = container.clientHeight;
+        camera.aspect = w/h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      });
+    })();
+
+  })();
+</script>
+</body>
+</html>
