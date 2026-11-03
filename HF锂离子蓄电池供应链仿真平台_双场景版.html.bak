@@ -1,0 +1,2353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HF锂离子蓄电池 · 3D数字孪生供应链仿真平台</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'Segoe UI', 'Microsoft YaHei', system-ui, sans-serif;
+      background: #ffffff;
+      color: #2c3e50;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ===== 步骤主题色系统（纯白底，颜色只用在元素上） ===== */
+    body.step-1 { background: #ffffff; --theme: #1a7bb9; --theme2: #2980b9; --glow: rgba(26,123,185,0.1); }
+    body.step-2 { background: #ffffff; --theme: #00a884; --theme2: #00c99e; --glow: rgba(0,168,132,0.1); }
+    body.step-3 { background: #ffffff; --theme: #8e44ad; --theme2: #9b59b6; --glow: rgba(142,68,173,0.1); }
+    body.step-4 { background: #ffffff; --theme: #2980d9; --theme2: #3498db; --glow: rgba(41,128,217,0.1); }
+    body.step-5 { background: #ffffff; --theme: #27ae60; --theme2: #2ecc71; --glow: rgba(39,174,96,0.1); }
+    body.step-6 { background: #ffffff; --theme: #e67e22; --theme2: #f39c12; --glow: rgba(230,126,34,0.1); }
+    body.step-7 { background: #ffffff; --theme: #d35400; --theme2: #e67e22; --glow: rgba(211,84,0,0.1); }
+    body.step-8 { background: #ffffff; --theme: #c0392b; --theme2: #e74c3c; --glow: rgba(192,57,43,0.1); }
+    body.step-9 { background: #ffffff; --theme: #00838f; --theme2: #00acc1; --glow: rgba(0,131,143,0.1); }
+    body.step-10 { background: #ffffff; --theme: #d4a017; --theme2: #f1c40f; --glow: rgba(212,160,23,0.15); }
+    body.step-11 { background: #ffffff; --theme: #5b6abf; --theme2: #7986cb; --glow: rgba(91,106,191,0.1); }
+
+    /* 主题色生效元素（白底教学风） */
+    .header-bar .logo { color: var(--theme); }
+    .header-bar .logo i { color: var(--theme); }
+    .panel h2 { color: #2c3e50; }
+    .panel h2 i { color: var(--theme); }
+    .panel h3 { color: var(--theme); }
+    .card h4 { color: var(--theme); }
+    .step-btn.active {
+      background: linear-gradient(145deg, var(--theme), var(--theme2));
+      color: #fff; box-shadow: 0 2px 10px var(--glow);
+    }
+    button.primary {
+      background: linear-gradient(145deg, var(--theme), var(--theme2));
+      box-shadow: 0 3px 10px var(--glow);
+    }
+    button.primary:hover { box-shadow: 0 4px 15px var(--glow); transform: scale(1.03); }
+    button.secondary { border-color: var(--theme); color: var(--theme); }
+    button.secondary:hover { background: var(--glow); }
+    .panel {
+      background: #ffffff;
+      border: 1px solid var(--theme);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      color: #2c3e50;
+    }
+    .card {
+      background: #ffffff;
+      border: 1px solid #dce4ec;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      color: #2c3e50;
+    }
+    .card.interactive:hover {
+      border-color: var(--theme);
+      box-shadow: 0 4px 15px var(--glow);
+    }
+    .card.selected { border-color: var(--theme); background: var(--glow); }
+    .tag { background: var(--glow); color: var(--theme); }
+    .tag.green { background: #d5f5e3; color: #27ae60; }
+    .tag.orange { background: #fdebd0; color: #e67e22; }
+    .gauge-item { background: #f8fafc; border: 1px solid #e0e8f0; }
+    .value { color: var(--theme); }
+    th { color: var(--theme); background: var(--glow); }
+    td { color: #2c3e50; }
+    .progress-fill { background: linear-gradient(90deg, var(--theme), var(--theme2)); }
+    input[type=range] { accent-color: var(--theme); }
+    input[type=number] {
+      background: #fff; border: 1px solid #d0d8e0; color: #2c3e50;
+    }
+    input[type=number]:focus { border-color: var(--theme); box-shadow: 0 0 8px var(--glow); }
+    .steps-nav {
+      background: #ffffff;
+      border: 1px solid var(--theme);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+    .step-btn { color: #6c7a89; }
+    .step-btn.completed { color: var(--theme); background: var(--glow); }
+    .supply-hero .hero-overlay h3 { color: #fff; }
+    .supply-hero .hero-overlay p { color: #e0e8f0; }
+    .btn-download {
+      background: linear-gradient(145deg, var(--theme), var(--theme2));
+      color: #fff;
+      box-shadow: 0 3px 10px var(--glow);
+    }
+    .header-bar {
+      background: #ffffff;
+      border: 1px solid var(--theme);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+    .header-bar .user-info { color: #6c7a89; }
+    .header-bar .badge {
+      background: var(--glow);
+      color: var(--theme);
+    }
+    .map3d-card {
+      background: #f8fafc;
+      border: 1px solid var(--theme);
+    }
+    .map3d-card .map-label { color: var(--theme); background: rgba(255,255,255,0.9); }
+    .supplier-card, .route-item {
+      background: #f8fafc; border: 1px solid #dce4ec; color: #2c3e50;
+    }
+    .supplier-card:hover, .route-item:hover { border-color: var(--theme); background: #fff; }
+    .supplier-card.selected, .route-item.selected {
+      border-color: var(--theme); background: var(--glow);
+    }
+    .bom-table { background: #f8fafc; }
+    .score-roll { background: #f8fafc; border: 1px solid #e0e8f0; }
+    .score-roll-item { border-bottom: 1px solid #e8ecf0; color: #2c3e50; }
+    .score-roll-item .user { color: var(--theme); }
+    .score-roll-item .score { color: #27ae60; }
+    .quiz-option { background: #f8fafc; border: 1px solid #dce4ec; color: #2c3e50; }
+    .quiz-option:hover { border-color: var(--theme); background: var(--glow); }
+    .quiz-option.correct { border-color: #27ae60; background: #d5f5e3; }
+    .quiz-option.wrong { border-color: #e74c3c; background: #fadbd8; }
+    .quiz-option .opt-label { background: #e8ecf0; color: var(--theme); }
+    .video-card { background: #f8fafc; border: 1px solid #dce4ec; }
+    .notification { color: #fff; }
+    #three-container { opacity: 0.12; }
+    ::-webkit-scrollbar-thumb { background: var(--theme); }
+
+    /* ===== 登录全屏背景 ===== */
+    .login-fullscreen {
+      position: fixed; top:0; left:0; width:100%; height:100%;
+      background: url('assets/login-bg-pro.jpg') no-repeat center center;
+      background-size: cover;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100;
+    }
+    .login-overlay {
+      position: absolute; top:0; left:0; width:100%; height:100%;
+      background: linear-gradient(135deg, rgba(6,12,28,0.55) 0%, rgba(6,12,28,0.35) 50%, rgba(6,12,28,0.55) 100%);
+      pointer-events: none;
+    }
+    .login-fullscreen::after { display:none; }
+    .login-content {
+      position: relative; z-index: 2;
+      display: flex; flex-direction: column; align-items: center;
+      max-width: 900px; padding: 2rem;
+    }
+    .login-logo-area {
+      text-align: center; margin-bottom: 1.5rem;
+      animation: fadeInDown 1s ease;
+    }
+    .login-logo-area .bolt-icon {
+      font-size: 3rem; color: #00d2ff;
+      text-shadow: 0 0 30px rgba(0,210,255,0.7), 0 0 60px rgba(0,210,255,0.4);
+      margin-bottom: 0.5rem;
+    }
+    .login-logo-area h1 {
+      font-size: 2.4rem; font-weight: 700; letter-spacing: 3px;
+      color: #ffffff;
+      text-shadow: 0 2px 15px rgba(0,0,0,0.6), 0 0 40px rgba(0,210,255,0.3);
+      margin-bottom: 0.3rem;
+    }
+    .login-logo-area .subtitle {
+      color: #b0d8ee; font-size: 1.2rem; letter-spacing: 3px;
+      font-weight: 600;
+      text-shadow: 0 1px 6px rgba(0,0,0,0.6);
+    }
+    .login-features {
+      display: flex; gap: 2rem; margin: 1.2rem 0;
+      animation: fadeInUp 1s ease 0.3s both;
+    }
+    .login-feature {
+      text-align: center; color: #ffffff; font-size: 0.95rem; font-weight:600;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+    }
+    .login-feature i {
+      display: block; font-size: 1.6rem; color: #00d2ff; margin-bottom: 0.3rem;
+    }
+    .login-card {
+      background: rgba(8, 18, 38, 0.75);
+      backdrop-filter: blur(20px);
+      border-radius: 1.8rem;
+      padding: 2.2rem 2.8rem;
+      border: 1px solid rgba(0, 210, 255, 0.3);
+      box-shadow: 0 25px 60px rgba(0,0,0,0.6), 0 0 40px rgba(0,210,255,0.1);
+      width: 420px;
+      animation: fadeInUp 0.8s ease 0.5s both;
+    }
+    .login-card h2 {
+      font-size: 1.5rem; color: #00d2ff; text-align: center;
+      margin-bottom: 1.2rem; letter-spacing: 3px; font-weight: 700;
+    }
+    .input-group { margin-bottom: 1.1rem; }
+    .input-group label { display:block; margin-bottom:0.3rem; color:#aaccdd; font-size:0.9rem; font-weight:600; }
+    .input-group input {
+      width:100%; padding:0.7rem 1.2rem;
+      background: rgba(10,22,42,0.8); border:1px solid #2a3a55; border-radius:0.8rem;
+      color:#fff; font-size:1rem; outline:none; transition:0.25s;
+    }
+    .input-group input:focus { border-color:#00d2ff; box-shadow:0 0 20px #00d2ff44; }
+    .btn-login {
+      background: linear-gradient(145deg, #00d2ff, #006a8a);
+      border:none; padding:0.75rem 2rem; border-radius:2rem;
+      font-weight:bold; font-size:1.05rem; color:#fff; cursor:pointer;
+      margin-top:0.5rem; width:100%; transition:0.3s;
+      box-shadow:0 6px 20px #00d2ff44;
+    }
+    .btn-login:hover { box-shadow:0 0 40px #00d2ffaa; transform:scale(1.02); }
+    .login-stats {
+      margin-top:1rem; text-align:center; font-size:0.82rem; color:#6688aa;
+      border-top:1px solid rgba(0,210,255,0.12); padding-top:0.8rem;
+    }
+    .login-stats i { color:#00ff88; margin-right:5px; }
+    .login-hint {
+      margin-top:0.8rem; font-size:0.85rem; color:#e8f4ff;
+      text-align:center; background:rgba(0,210,255,0.12);
+      border:1px solid rgba(0,210,255,0.35); border-radius:0.6rem;
+      padding:0.6rem 0.8rem; line-height:1.7;
+    }
+    .login-hint .cred { display:flex; justify-content:center; gap:1.2rem; margin-top:0.2rem; font-weight:600; }
+    .login-hint .cred span { color:#00d2ff; }
+
+    @keyframes fadeInDown { from{opacity:0;transform:translateY(-30px);} to{opacity:1;transform:translateY(0);} }
+    @keyframes fadeInUp { from{opacity:0;transform:translateY(30px);} to{opacity:1;transform:translateY(0);} }
+
+    /* ===== 主工作台 ===== */
+    .platform-wrapper {
+      display: none;
+      max-width: 1400px; width: 100%;
+      margin: 0 auto; padding: 1rem;
+      position: relative;
+    }
+    .platform-wrapper.active { display: block; }
+    #three-container {
+      position: fixed; top:0; left:0; width:100%; height:100%;
+      z-index: 0; pointer-events: none; opacity: 0.1;
+    }
+    #three-container canvas { display:block; }
+    .main-content { position: relative; z-index: 5; }
+
+    .header-bar {
+      background: #ffffff;
+      border-radius: 1rem;
+      padding: 0.8rem 1.5rem;
+      margin-bottom: 1rem;
+      border: 1px solid var(--theme);
+      display: flex; justify-content: space-between; align-items: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+    .header-bar .logo {
+      display: flex; align-items: center; gap: 0.6rem;
+      font-size: 1.1rem; font-weight: 700; color: var(--theme);
+    }
+    .header-bar .logo i { font-size: 1.4rem; color: var(--theme); }
+    .header-bar .user-info {
+      display: flex; align-items: center; gap: 0.8rem;
+      font-size: 0.85rem; color: #6c7a89;
+    }
+    .header-bar .user-info .badge {
+      background: var(--glow); color: var(--theme);
+      padding: 0.2rem 0.7rem; border-radius: 1rem; font-size: 0.75rem;
+    }
+
+    .steps-nav {
+      display: flex; flex-wrap: wrap; gap: 0.2rem;
+      margin-bottom: 1.2rem;
+      background: #ffffff;
+      padding: 0.5rem; border-radius: 2rem;
+      border: 1px solid var(--theme);
+      justify-content: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+    .step-btn {
+      background: transparent; border:none;
+      color: #6c7a89; padding: 0.35rem 0.8rem;
+      border-radius: 2rem; font-weight: 600; font-size: 0.68rem;
+      cursor: pointer; transition: 0.25s;
+      display: flex; align-items: center; gap: 0.25rem;
+    }
+    .step-btn i { font-size: 0.85rem; }
+    .step-btn.active {
+      background: linear-gradient(145deg, var(--theme), var(--theme2));
+      color: #fff; box-shadow: 0 2px 10px var(--glow);
+    }
+    .step-btn.completed {
+      background: var(--glow); color: var(--theme);
+    }
+    .step-btn:hover:not(.active) { color: var(--theme); background: var(--glow); }
+
+    .panel {
+      background: #ffffff;
+      border-radius: 1.2rem;
+      padding: 1.5rem;
+      border: 1px solid var(--theme);
+      margin-bottom: 1rem;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      color: #2c3e50;
+    }
+    .panel h2 {
+      font-size: 1.3rem; margin-bottom: 1rem; color: #2c3e50;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .panel h2 i { color: var(--theme); }
+    .panel h3 { color: var(--theme); margin: 0.8rem 0 0.5rem; font-size: 1.05rem; }
+
+    .flex-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .card {
+      background: #ffffff;
+      border-radius: 1rem; padding: 1.1rem;
+      border: 1px solid #dce4ec;
+      flex: 1; min-width: 180px;
+      transition: 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      color: #2c3e50;
+    }
+    .card.interactive { cursor: pointer; }
+    .card.interactive:hover {
+      border-color: var(--theme); box-shadow: 0 4px 15px var(--glow);
+      transform: translateY(-3px);
+    }
+    .card.selected {
+      border-color: #00ff88; box-shadow: 0 0 25px #00ff8866;
+      background: rgba(0,40,30,0.3);
+    }
+    .card h4 { color: #00d2ff; margin-bottom: 0.5rem; }
+
+    .slider-group { margin: 0.8rem 0; }
+    input[type=range] { width:100%; accent-color: var(--theme); height:5px; border-radius:4px; background:#e0e8f0; }
+    input[type=number] {
+      background:#fff; border:1px solid #d0d8e0;
+      color:#2c3e50; padding:0.4rem 0.6rem; border-radius:0.6rem;
+      width: 110px; transition:0.2s;
+    }
+    input[type=number]:focus { border-color:#00d2ff; box-shadow:0 0 12px #00d2ff44; }
+
+    .gauge-grid { display:flex; gap:0.8rem; justify-content:center; flex-wrap:wrap; }
+    .gauge-item {
+      text-align:center; background:#ffffff; border-radius:1rem;
+      padding:0.9rem 1.3rem; border:1px solid #e0e8f0; min-width:110px;
+    }
+    .value { font-size:1.8rem; font-weight:700; color:#00ff88; text-shadow:0 0 15px #00ff8844; }
+
+    button.primary {
+      background: linear-gradient(145deg, #00d2ff, #0077a0);
+      border:none; padding:0.6rem 1.8rem; border-radius:2rem;
+      font-weight:bold; cursor:pointer; color:#fff;
+      transition:0.25s; font-size:0.95rem;
+      box-shadow:0 4px 15px #00d2ff55; margin-top:0.5rem;
+    }
+    button.primary:hover { box-shadow:0 0 35px #00d2ffaa; transform:scale(1.04); }
+    button.secondary {
+      background:transparent; border:1px solid #00d2ff;
+      padding:0.6rem 1.8rem; border-radius:2rem;
+      font-weight:bold; cursor:pointer; color:#00d2ff;
+      transition:0.25s; margin-top:0.5rem;
+    }
+    button.secondary:hover { background:rgba(0,210,255,0.12); }
+
+    .hidden { display: none !important; }
+
+    .supplier-card, .route-item {
+      background:#f8fafc; border-radius:0.8rem; padding:0.6rem 1rem;
+      margin:0.4rem 0; cursor:pointer;
+      border:1px solid #dce4ec; transition:0.25s;
+      display:flex; justify-content:space-between; align-items:center;
+      color:#2c3e50;
+    }
+    .supplier-card:hover, .route-item:hover { border-color:var(--theme); transform:translateX(4px); background:#fff; }
+    .supplier-card.selected, .route-item.selected {
+      border-color:var(--theme); background:var(--glow);
+    }
+
+    table { width:100%; border-collapse:collapse; font-size:0.82rem; }
+    th, td { padding:0.45rem; border-bottom:1px solid #e0e8f0; text-align:left; }
+    th { color: var(--theme); background: var(--glow); }
+
+    .tag {
+      display:inline-block; padding:0.15rem 0.6rem; border-radius:2rem;
+      font-size:0.68rem; background:#00d2ff22; color:#00d2ff; margin:0.15rem;
+    }
+    .tag.green { background:#00ff8822; color:#00ff88; }
+    .tag.orange { background:#ffaa0022; color:#ffaa00; }
+
+    .progress-bar { height:6px; background:#e0e8f0; border-radius:8px; overflow:hidden; margin:0.4rem 0; }
+    .progress-fill { height:100%; background:linear-gradient(90deg,#00d2ff,#00ff88); transition:width 0.6s; }
+
+    .notification {
+      position:fixed; top:20px; right:20px;
+      background:#00ff88; color:#080c18;
+      padding:0.8rem 1.5rem; border-radius:1.2rem; font-weight:bold;
+      z-index:9999; animation:slideIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      box-shadow:0 10px 30px rgba(0,255,136,0.3);
+    }
+    @keyframes slideIn { from{transform:translateX(120%) scale(0.8);opacity:0;} to{transform:translateX(0) scale(1);opacity:1;} }
+
+    .map3d-card {
+      background:rgba(0,20,40,0.5); border-radius:1rem;
+      padding:0.6rem; border:1px solid #2a4a6a;
+      height:320px; position:relative; overflow:hidden; margin:0.8rem 0;
+    }
+    .map3d-card canvas { width:100%!important; height:100%!important; display:block; border-radius:0.6rem; }
+    .map3d-card .map-label {
+      position:absolute; top:0.5rem; left:0.8rem; z-index:10;
+      background:rgba(0,0,0,0.6); padding:0.2rem 0.7rem; border-radius:0.5rem;
+      font-size:0.75rem; color:#00d2ff;
+    }
+
+    .bom-table { background:#f8fafc; border-radius:0.8rem; padding:0.8rem; margin-top:0.5rem; border:1px solid #e8ecf0; }
+
+    ::-webkit-scrollbar { width:6px; background:#0a1424; }
+    ::-webkit-scrollbar-thumb { background:#00d2ff; border-radius:10px; }
+
+    .score-roll { max-height:200px; overflow-y:auto; background:#f8fafc; border-radius:0.8rem; padding:0.5rem; border:1px solid #e0e8f0; }
+    .score-roll-item { display:flex; justify-content:space-between; padding:0.25rem 0.3rem; border-bottom:1px solid #1a2a44; font-size:0.8rem; }
+    .score-roll-item .user { color:#00d2ff; }
+    .score-roll-item .score { color:#00ff88; font-weight:bold; }
+
+    .btn-download {
+      background:linear-gradient(145deg,#00cc88,#008866);
+      border:none; padding:0.55rem 1.5rem; border-radius:2rem;
+      font-weight:bold; cursor:pointer; color:#080c18;
+      transition:0.25s; box-shadow:0 4px 15px #00cc8855;
+    }
+    .btn-download:hover { box-shadow:0 0 30px #00cc88aa; }
+
+    /* ===== 实验成绩台账（Excel 风格表格） ===== */
+    .ledger-wrap {
+      margin-top:0.5rem; border:1px solid #b9c6d4; border-radius:0.4rem;
+      overflow-x:auto; background:#ffffff; box-shadow:inset 0 0 0 1px #ffffff;
+    }
+    .ledger-table { width:100%; border-collapse:collapse; font-size:0.78rem; color:#1f2d3d; min-width:720px; }
+    .ledger-table thead th {
+      background:#e8eef5; color:#1f2d3d; font-weight:700; font-size:0.74rem;
+      padding:0.42rem 0.4rem; border:1px solid #b9c6d4; text-align:center; line-height:1.35;
+    }
+    .ledger-table thead th .sub { font-weight:400; color:#6c7a89; font-size:0.68rem; }
+    .ledger-table td { padding:0.38rem 0.4rem; border:1px solid #d3dce5; text-align:center; white-space:nowrap; }
+    .ledger-table tbody tr:nth-child(even) td { background:#f6f9fc; }
+    .ledger-table tbody tr:hover td { background:#eaf2fb; }
+    .ledger-table .cell-idx { background:#eef3f8; color:#5d7186; width:34px; font-weight:600; }
+    .ledger-table .cell-user { color:#1a7bb9; font-weight:600; text-align:left; }
+    .ledger-table .cell-score { color:#1e8449; font-weight:700; }
+    .ledger-table .cell-time { color:#5d7186; font-size:0.72rem; }
+    .ledger-table .cell-empty { color:#8a97a6; padding:1.2rem 0.4rem; }
+
+    .video-card { margin:1rem 0; background:rgba(0,20,40,0.3); border-radius:0.8rem; padding:0.8rem; border:1px solid #2a4a6a; }
+    .video-wrapper { position:relative; padding-bottom:56.25%; height:0; overflow:hidden; border-radius:0.6rem; background:#000; }
+    .video-wrapper iframe { position:absolute; top:0; left:0; width:100%; height:100%; border:none; }
+
+    /* ===== 新增：供应链全景展示 ===== */
+    .supply-hero {
+      position: relative; border-radius: 1.2rem; overflow: hidden;
+      height: 220px; margin-bottom: 1rem;
+    }
+    .supply-hero img { width:100%; height:100%; object-fit:cover; }
+    .supply-hero .hero-overlay {
+      position:absolute; top:0; left:0; width:100%; height:100%;
+      background: linear-gradient(180deg, rgba(6,12,28,0.3) 0%, rgba(6,12,28,0.9) 100%);
+      display:flex; align-items:flex-end; padding:1.2rem;
+    }
+    .supply-hero .hero-overlay h3 {
+      color:#fff; font-size:1.3rem; text-shadow:0 2px 10px rgba(0,0,0,0.8);
+    }
+    .supply-hero .hero-overlay p { color:#5a6c7d; font-size:0.85rem; margin-top:0.2rem; }
+
+    /* ===== 新增：3D节点交互提示 ===== */
+    .node-info-popup {
+      position: absolute; background: rgba(255,255,255,0.97);
+      border: 1px solid var(--theme); border-radius: 0.6rem;
+      padding: 0.6rem 0.9rem; font-size: 0.78rem;
+      max-width: 200px; z-index: 20; pointer-events: none;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+      display: none;
+      color: #2c3e50;
+    }
+    .node-info-popup h5 { color: var(--theme); margin-bottom:0.3rem; }
+    .node-info-popup p { color:#5a6c7d; line-height:1.4; }
+
+    /* ===== 新增：知识小测 ===== */
+    .quiz-option {
+      background:#f8fafc; border:1px solid #dce4ec; border-radius:0.8rem;
+      padding:0.7rem 1rem; margin:0.4rem 0; cursor:pointer;
+      transition:0.25s; display:flex; align-items:center; gap:0.6rem; color:#2c3e50;
+    }
+    .quiz-option:hover { border-color:var(--theme); background:var(--glow); }
+    .quiz-option.selected { border-color:var(--theme); background:var(--glow); box-shadow:0 0 0 2px var(--theme) inset; }
+    .quiz-option.selected .opt-label { background:var(--theme); color:#fff; }
+    .quiz-option.correct { border-color:#27ae60; background:#d5f5e3; }
+    .quiz-option.wrong { border-color:#e74c3c; background:#fadbd8; }
+    .quiz-option .opt-label {
+      width:24px; height:24px; border-radius:50%; background:#e8ecf0;
+      display:flex; align-items:center; justify-content:center;
+      font-size:0.75rem; font-weight:bold; color:var(--theme); flex-shrink:0;
+    }
+
+    /* ===== 新增：动画运输线 ===== */
+    .flow-line { position: relative; overflow: hidden; }
+    .flow-line::after {
+      content:''; position:absolute; top:0; left:-100%; width:100%; height:100%;
+      background: linear-gradient(90deg, transparent, rgba(0,255,136,0.3), transparent);
+      animation: flowSlide 2s linear infinite;
+    }
+    @keyframes flowSlide { to { left:100%; } }
+
+    /* ===== 响应式 ===== */
+    @media (max-width: 768px) {
+      .login-card { width: 92%; padding: 1.8rem 1.5rem; }
+      .login-logo-area h1 { font-size: 1.8rem; }
+      .login-features { gap: 1rem; flex-wrap: wrap; justify-content: center; }
+      .flex-row { flex-direction: column; }
+      .gauge-grid { gap: 0.5rem; }
+      .gauge-item { min-width: 80px; padding: 0.6rem; }
+      .value { font-size: 1.4rem; }
+      .panel { padding: 1rem; }
+      .steps-nav { border-radius: 1.5rem; padding: 0.3rem; }
+      .step-btn { padding: 0.25rem 0.5rem; font-size: 0.6rem; }
+    }
+    /* ===== Toast通知 ===== */
+    #toastZone{position:fixed;top:18px;right:18px;z-index:9999;display:flex;flex-direction:column;gap:.5rem}
+    .toast{background:#fff;border-left:4px solid var(--theme,#2980d9);border-radius:.6rem;padding:.7rem 1.2rem;box-shadow:0 4px 20px rgba(0,0,0,.15);font-size:.88rem;color:#2c3e50;min-width:220px;animation:toastIn .35s cubic-bezier(.34,1.56,.64,1)}
+    .toast.err{border-left-color:#e74c3c}.toast.warn{border-left-color:#f39c12}.toast.ok{border-left-color:#27ae60}
+    @keyframes toastIn{from{transform:translateX(120%);opacity:0}to{transform:none;opacity:1}}
+    @keyframes toastOut{to{transform:translateX(120%);opacity:0}}
+    .toast.out{animation:toastOut .3s forwards}
+    /* ===== 彩带 ===== */
+    #confetti{position:fixed;inset:0;z-index:150;pointer-events:none;display:none}
+    /* ===== 风险事件弹窗 ===== */
+    .event-modal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9998;display:none;align-items:center;justify-content:center}
+    .event-modal.show{display:flex !important}
+    .event-modal-box{background:#fff;border-radius:1rem;padding:2rem;max-width:480px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+    .event-modal-box h3{color:#e74c3c;margin-bottom:.8rem;display:flex;align-items:center;gap:.5rem}
+    .event-modal-box p{color:#2c3e50;line-height:1.7;margin-bottom:1rem}
+    .event-choices{display:flex;flex-direction:column;gap:.6rem}
+    .event-choice{background:#f8fafc;border:2px solid #dce4ec;border-radius:.6rem;padding:.7rem 1rem;cursor:pointer;transition:.2s;color:#2c3e50;text-align:left}
+    .event-choice:hover{border-color:#2980d9;background:#eef4fb}
+
+  </style>
+</head>
+<body>
+<div id="toastZone"></div>
+<canvas id="confetti"></canvas>
+<!-- 图片预加载：确保发布时静态扫描到JS动态引用的所有图片 -->
+<div aria-hidden="true" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);">
+  <img src="assets/login-bg.jpg" alt="">
+  <img src="assets/factory-line.jpg" alt="">
+  <img src="assets/li-cell.jpg" alt="">
+  <img src="assets/li-electrolyte.jpg" alt="">
+  <img src="assets/li-shell.jpg" alt="">
+</div>
+  <!-- ===== 登录全屏界面 ===== -->
+  <div id="loginScreen" class="login-fullscreen">
+    <div class="login-overlay"></div>
+    <div class="login-content">
+      <div class="login-logo-area">
+        <div class="bolt-icon"><i class="fas fa-bolt"></i></div>
+        <h1>合肥大学新能源蓄电池虚拟仿真实验</h1>
+        <div class="subtitle">3D 数字孪生 · 供应链运营虚拟仿真平台</div>
+      </div>
+      <div class="login-features">
+        <div class="login-feature"><i class="fas fa-industry"></i>双工厂生产</div>
+        <div class="login-feature"><i class="fas fa-globe-asia"></i>跨境物流</div>
+        <div class="login-feature"><i class="fas fa-cubes"></i>60天仿真</div>
+        <div class="login-feature"><i class="fas fa-chart-line"></i>五维评分</div>
+      </div>
+      <div class="login-card">
+        <h2><i class="fas fa-sign-in-alt"></i> 实验人员登录</h2>
+        <div class="input-group">
+          <label>用户名</label>
+          <input type="text" id="username" value="HFAdmin" placeholder="请输入用户名">
+        </div>
+        <div class="input-group">
+          <label>密码</label>
+          <input type="password" id="password" value="supply2024" placeholder="请输入密码">
+        </div>
+        <button class="btn-login" id="loginBtn"><i class="fas fa-rocket"></i> 进入仿真实验</button>
+        <div class="login-stats">
+          <i class="fas fa-users"></i> 累计参与实验：<span id="loginCountDisplay">0</span> 人次
+        </div>
+        <div class="login-hint">
+          <i class="fas fa-key"></i> 实验测试账号
+          <div class="cred">
+            <div>用户名：<span>HFAdmin</span></div>
+            <div>密码：<span>supply2024</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 主工作台 ===== -->
+  <div class="platform-wrapper" id="mainWrapper">
+    <div id="three-container"></div>
+    <div class="main-content">
+      <div class="header-bar">
+        <div class="logo">
+          <i class="fas fa-bolt"></i>
+          <span>HF锂离子蓄电池 · 3D数字孪生供应链仿真</span>
+        </div>
+        <div class="user-info">
+          <i class="fas fa-user-circle"></i>
+          <span id="displayUser">HFAdmin</span>
+          <span class="badge">实验进行中</span>
+        </div>
+      </div>
+
+      <div class="steps-nav" id="stepNav">
+        <button class="step-btn active" data-step="1"><i class="fas fa-door-open"></i>欢迎</button>
+        <button class="step-btn" data-step="2"><i class="fas fa-book-open"></i>案例数据</button>
+        <button class="step-btn" data-step="3"><i class="fas fa-brain"></i>知识小测</button>
+        <button class="step-btn" data-step="4"><i class="fas fa-chart-line"></i>需求预测</button>
+        <button class="step-btn" data-step="5"><i class="fas fa-industry"></i>生产补货</button>
+        <button class="step-btn" data-step="6"><i class="fas fa-cubes"></i>物料BOM</button>
+        <button class="step-btn" data-step="7"><i class="fas fa-truck-loading"></i>供应商</button>
+        <button class="step-btn" data-step="8"><i class="fas fa-ship"></i>物流计划</button>
+        <button class="step-btn" data-step="9"><i class="fas fa-vr-cardboard"></i>数字孪生</button>
+        <button class="step-btn" data-step="10"><i class="fas fa-trophy"></i>实验成绩</button>
+        <button class="step-btn" data-step="11"><i class="fas fa-redo"></i>复盘分析</button>
+      </div>
+
+      <div id="stepContent" class="panel"></div>
+    </div>
+  </div>
+
+<script>
+(function() {
+  // ---------- 数据存储（本地 LocalStorage + 同源服务端接口，双层持久化） ----------
+  // 累计参与实验人数基线（前期已开展实验累计）
+  const PARTICIPANT_BASE = 260;
+  // 后期每次登录按双倍人次登记
+  const LOGIN_INCREMENT = 2;
+  // 最后一步台账表展示的记录条数
+  const LEDGER_ROWS = 10;
+  // 成绩记录在存储中的保留上限
+  const RECORD_KEEP = 60;
+  // 可选服务端接口（与本页面同目录部署 server.js 后自动启用；纯静态托管时静默降级为本地存储）
+  const API_PATH = 'api/stats';
+
+  // 基线之外新增的实际登录次数
+  let totalLogins = parseInt(localStorage.getItem('hf_loginSessions')) || 0;
+  // 实验成绩记录（本地）
+  let scoreRoll = JSON.parse(localStorage.getItem('em_scoreRoll')) || [];
+  // 服务端接口是否可用
+  let apiOnline = false;
+
+  // 累计参与实验人数 = 基线 + 登录次数 × 登记倍数
+  function participantTotal() { return PARTICIPANT_BASE + totalLogins * LOGIN_INCREMENT; }
+
+  function fmtTime(t) {
+    if (!t) return '-';
+    try { return new Date(t).toLocaleString('zh-CN', { hour12:false }); } catch(e) { return new Date(t).toLocaleString(); }
+  }
+
+  function updateLoginDisplay() {
+    const el = document.getElementById('loginCountDisplay');
+    if (el) el.textContent = participantTotal();
+    const badge = document.getElementById('participantTotalBadge');
+    if (badge) badge.textContent = participantTotal();
+  }
+
+  function saveLocal() {
+    localStorage.setItem('hf_loginSessions', String(totalLogins));
+    localStorage.setItem('em_scoreRoll', JSON.stringify(scoreRoll));
+  }
+
+  // 合并服务端记录（按 用户名+时间 去重，按时间倒序）
+  function mergeRecords(incoming) {
+    if (!Array.isArray(incoming) || !incoming.length) return;
+    const seen = new Set(scoreRoll.map(r => (r.user||'') + '@' + (r.time||0)));
+    incoming.forEach(r => {
+      if (!r || typeof r !== 'object') return;
+      const key = (r.user||'') + '@' + (r.time||0);
+      if (!seen.has(key)) { scoreRoll.push(r); seen.add(key); }
+    });
+    scoreRoll.sort((a, b) => (b.time||0) - (a.time||0));
+    if (scoreRoll.length > RECORD_KEEP) scoreRoll = scoreRoll.slice(0, RECORD_KEEP);
+  }
+
+  // 拉取服务端统计（网站部署时跨浏览器累计）
+  async function pullStats() {
+    try {
+      const res = await fetch(API_PATH + '?t=' + Date.now(), { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json();
+      apiOnline = true;
+      if (typeof data.logins === 'number' && data.logins > totalLogins) totalLogins = data.logins;
+      mergeRecords(data.records);
+      saveLocal();
+      updateLoginDisplay();
+      renderScoreRoll();
+      renderLedger();
+    } catch (e) { /* 纯静态托管或接口不可用：保持本地存储 */ }
+  }
+
+  // 回写服务端统计
+  async function pushStats() {
+    saveLocal();
+    if (!apiOnline) return;
+    try {
+      await fetch(API_PATH, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ logins: totalLogins, records: scoreRoll })
+      });
+    } catch (e) { /* 网络异常不影响本地记录 */ }
+  }
+
+  // 首次使用：播种 10 条历史实验记录，保证最后一步台账表始终呈现 10 条数据
+  function seedLedger() {
+    if (localStorage.getItem('hf_ledgerSeeded')) return;
+    if (scoreRoll.length > 0) { localStorage.setItem('hf_ledgerSeeded', '1'); return; }
+    const seeds = [
+      ['HF2024001', 92, 24, 23, 18, 14, 13],
+      ['HF2024002', 86, 22, 21, 17, 13, 13],
+      ['HF2024003', 78, 20, 19, 15, 12, 12],
+      ['HF2024004', 95, 25, 24, 19, 14, 13],
+      ['HF2024005', 83, 21, 20, 16, 14, 12],
+      ['HF2024006', 89, 23, 22, 18, 13, 13],
+      ['HF2024007', 74, 19, 18, 14, 12, 11],
+      ['HF2024008', 91, 24, 22, 18, 14, 13],
+      ['HF2024009', 81, 21, 19, 16, 13, 12],
+      ['HF2024010', 87, 22, 21, 17, 14, 13]
+    ];
+    // 使用确定性基准时间（而非 Date.now()），保证不同浏览器/不同机器播种出的记录
+    // 完全一致，服务端按「用户名+时间」去重后不会出现重复行
+    const SEED_BASE = new Date(2026, 8, 1, 9, 0, 0).getTime();   // 2026-09-01 09:00
+    const day = 86400000;
+    scoreRoll = seeds.map((s, i) => ({
+      user: s[0], score: s[1],
+      proc: s[2], log: s[3], fill: s[4], prod: s[5], dev: s[6],
+      fillRate: Math.round(70 + (i % 5) * 4 + (i % 3)),
+      deviation: 3 + (i % 6),
+      events: i % 7,
+      time: SEED_BASE + i * day
+    }));
+    localStorage.setItem('hf_ledgerSeeded', '1');
+    saveLocal();
+  }
+  seedLedger();
+
+  updateLoginDisplay();
+  pullStats();
+
+  // ---------- 仿真数据 ----------
+  const MASTER_DATA = {
+    product: { name: "锂离子蓄电池PACK（车载+无人机）", unit: "套", bom: { 电芯: 2, 电解液: 0.1, 壳体: 1 } },
+    salesPoints: [
+      { id: "华北总代", inventory: 3600, price: 480, currency: "CNY", cap: 4000, penalty: 5, history: [22203,23710,26400,24771,23722,23231], forecast: 24000 },
+      { id: "华中总代", inventory: 3000, price: 480, currency: "CNY", cap: 4000, penalty: 5, history: [27283,27610,30215,25354,29469,24889], forecast: 28000 },
+      { id: "日本总代", inventory: 4600, price: 7800, currency: "JPY", cap: 8000, penalty: 0.5, history: [20192,17900,17382,19237,20191,15631], forecast: 16500 },
+      { id: "西北总代", inventory: 4000, price: 480, currency: "CNY", cap: 5000, penalty: 5, history: [13039,16162,15634,14619,15108,14526], forecast: 15500 }
+    ],
+    suppliers: [
+      { id: "石家庄电芯厂", material: "电芯", stock: 7000, daily: 2828, available: 176680, price: 96, currency: "CNY" },
+      { id: "宝鸡电芯厂", material: "电芯", stock: 6500, daily: 3296, available: 204260, price: 85, currency: "CNY" },
+      { id: "四川电解液厂", material: "电解液", stock: 600, daily: 294, available: 18240, price: 400, currency: "CNY" },
+      { id: "贵阳电解液厂", material: "电解液", stock: 500, daily: 283, available: 17480, price: 430, currency: "CNY" },
+      { id: "常州壳体厂", material: "壳体", stock: 4200, daily: 1920, available: 119400, price: 30, currency: "CNY" },
+      { id: "东莞壳体厂", material: "壳体", stock: 3000, daily: 1854, available: 114240, price: 26, currency: "CNY" }
+    ],
+    factories: {
+      production: [
+        { factory: "广州PACK厂", stock: 5000, daily: 1442, total: 86520, cap: 6000 },
+        { factory: "苏州PACK厂", stock: 9000, daily: 1751, total: 105060, cap: 10000 }
+      ]
+    },
+    routes: [
+      { id: "R1", from: "广州PACK厂", to: "华中总代", dist: 873, days: 2, mode: "汽运" },
+      { id: "R2", from: "苏州PACK厂", to: "华北总代", dist: 922, days: 2, mode: "汽运" },
+      { id: "R3", from: "宝鸡电芯厂", to: "广州PACK厂", dist: 1413, days: 3, mode: "汽运" },
+      { id: "R4", from: "广州PACK厂", to: "华北总代", dist: 1683, days: 3, mode: "汽运" },
+      { id: "R5", from: "苏州PACK厂", to: "华中总代", dist: 614, days: 2, mode: "汽运" },
+      { id: "R6", from: "东莞壳体厂", to: "广州PACK厂", dist: 37, days: 1, mode: "汽运" },
+      { id: "R7", from: "广州PACK厂", to: "日本总代", dist: 2979, days: 9, mode: "海运" },
+      { id: "R8", from: "苏州PACK厂", to: "日本总代", dist: 1922, days: 7, mode: "海运" },
+      { id: "R9", from: "广州PACK厂", to: "西北总代", dist: 1375, days: 3, mode: "汽运" },
+      { id: "R10", from: "苏州PACK厂", to: "西北总代", dist: 1167, days: 2, mode: "汽运" }
+    ]
+  };
+
+  // 状态
+  const state = {
+    currentStep: 1, loggedIn: false, completedSteps: new Set(),
+    demandForecast: { "华北总代": 24000, "华中总代": 28000, "日本总代": 16500, "西北总代": 15500 },
+    productionPlan: { "广州PACK厂": 86520, "苏州PACK厂": 105060 },
+    materialRequirements: { "电芯": 0, "电解液": 0, "壳体": 0 },
+    selectedSuppliers: {}, selectedRoutes: {}, routeQuantities: {}, routeDays: {},
+    simulationRun: false, simulationResult: null,
+    quizScore: 0, bidStrategy: null, loanChoice: null, factoryUpgrade: false
+  };
+
+  // DOM引用
+  const loginScreen = document.getElementById('loginScreen');
+  const mainWrapper = document.getElementById('mainWrapper');
+  const stepContent = document.getElementById('stepContent');
+  const stepBtns = document.querySelectorAll('.step-btn');
+
+  function notify(msg) {
+    const n = document.createElement('div'); n.className = 'notification';
+    n.innerHTML = '<i class="fas fa-check-circle"></i> ' + msg;
+    document.body.appendChild(n);
+    setTimeout(() => n.remove(), 2800);
+  }
+
+  // ===== Toast通知 =====
+  function toast(msg, type) {
+    const zone = document.getElementById('toastZone'); if (!zone) return;
+    const t = document.createElement('div');
+    t.className = 'toast ' + (type || 'ok');
+    const icon = type === 'err' ? 'fa-times-circle' : type === 'warn' ? 'fa-exclamation-triangle' : 'fa-check-circle';
+    t.innerHTML = '<i class="fas ' + icon + '" style="color:var(--theme,#2980d9);margin-right:.5rem;"></i>' + msg;
+    zone.appendChild(t);
+    setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 350); }, 3000);
+  }
+
+  // ===== 彩带庆祝 =====
+  function fireConfetti() {
+    const c = document.getElementById('confetti'); if (!c) return;
+    c.style.display = 'block';
+    const ctx = c.getContext('2d');
+    c.width = innerWidth; c.height = innerHeight;
+    const pieces = [];
+    const colors = ['#e74c3c','#f39c12','#2ecc71','#3498db','#9b59b6','#1abc9c'];
+    for (let i = 0; i < 150; i++) {
+      pieces.push({ x: Math.random()*c.width, y: -20, w: 8+Math.random()*6, h: 12+Math.random()*8,
+        color: colors[Math.floor(Math.random()*colors.length)], vy: 2+Math.random()*3, vx: -1+Math.random()*2, rot: Math.random()*360, vr: -3+Math.random()*6 });
+    }
+    function frame() {
+      ctx.clearRect(0,0,c.width,c.height);
+      let alive = false;
+      pieces.forEach(p => {
+        p.y += p.vy; p.x += p.vx; p.rot += p.vr;
+        if (p.y < c.height + 20) alive = true;
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot*Math.PI/180);
+        ctx.fillStyle = p.color; ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h); ctx.restore();
+      });
+      if (alive) requestAnimationFrame(frame); else { c.style.display = 'none'; ctx.clearRect(0,0,c.width,c.height); }
+    }
+    frame();
+  }
+
+  // ===== 风险事件 =====
+  const RISK_EVENTS = [
+    { day: 8, title: '电芯供应商限产', desc: '石家庄电芯厂因设备检修，本周期电芯供应量减少30%。你如何应对？',
+      choices: [{text:'启用备用供应商（采购成本+8%）', procMult:1.08, outMult:0.97},
+                {text:'压缩生产计划，减少产出', procMult:1.0, outMult:0.85},
+                {text:'接受风险，硬扛到底', procMult:1.0, outMult:0.7}] },
+    { day: 18, title: '日元汇率波动', desc: '日元对人民币突然升值8%，跨境物流成本上升。你如何应对？',
+      choices: [{text:'已做汇率对冲（成本不变）', logMult:1.0},
+                {text:'改用国内替代路线（时间+5天）', logMult:1.05, timePenalty:5},
+                {text:'承担汇率损失', logMult:1.08}] },
+    { day: 28, title: '旺季需求超预期', desc: '华北总代订单突然增加20%，现有库存可能不足。你如何应对？',
+      choices: [{text:'释放安全库存保交付', mktMult:1.02, costMult:1.05},
+                {text:'加班加急生产', mktMult:0.95, costMult:1.12},
+                {text:'接受缺货', mktMult:0.85}] },
+    { day: 40, title: '海运延误', desc: '盐田港大雾封港3天，发往日本总代的货物滞留。你如何应对？',
+      choices: [{text:'改走汽运加急（运费+30%）', logMult:1.3, mktMult:1.0},
+                {text:'等待雾散（延迟3天到货）', logMult:1.0, mktMult:0.9},
+                {text:'紧急调货国内转口', logMult:1.15, mktMult:0.97}] },
+    { day: 52, title: '电池良品率下降', desc: '苏州PACK厂良品率从92%降至85%，需要额外返工。你如何应对？',
+      choices: [{text:'增加质检成本保质量', outMult:0.95, costMult:1.06},
+                {text:'勉强出货保数量', outMult:1.0, mktMult:0.92},
+                {text:'停产整顿（延迟2天）', outMult:0.88, mktMult:0.95}] },
+    { day: 25, title: '暴雪封路（V3.0新增）', desc: '北方暴雪导致公路中断3天，石家庄电芯厂发往广州PACK厂的原料运输受阻。你如何应对？',
+      choices: [{text:'改走铁路快运（运费+15%）', logMult:1.15, outMult:0.98},
+                {text:'等待雪融（延迟3天到货）', logMult:1.0, outMult:0.88},
+                {text:'启用宝鸡备用供应商直供', logMult:1.05, outMult:0.95}] },
+    { day: 35, title: '油价上涨（V3.0新增）', desc: '国际油价单日上涨12%，汽运和海运成本同步上升。你如何应对？',
+      choices: [{text:'已签订长期运输协议（成本不变）', logMult:1.0},
+                {text:'改用铁路多式联运（时间+2天）', logMult:1.05},
+                {text:'承担油价上涨成本', logMult:1.12}] }
+  ].sort((a, b) => a.day - b.day);
+  let eventResults = [];
+  function showEventModal(ev, cb) {
+    // 移除已有弹窗
+    var old = document.getElementById('__risk_modal__'); if(old) old.remove();
+    // 先隐藏3D画布和主内容，避免遮挡
+    var tc = document.getElementById('three-container'); if(tc) tc.style.display='none';
+    setTimeout(function(){
+      var modal = document.createElement('div');
+      modal.id = '__risk_modal__';
+      modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;background:rgba(0,0,0,0.7);z-index:2147483647;display:flex !important;align-items:center;justify-content:center;margin:0;padding:0;';
+      var box = document.createElement('div');
+      box.style.cssText = 'background:#fff;border-radius:1rem;padding:2rem;max-width:500px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.5);border-top:4px solid #e74c3c;';
+      box.innerHTML = '<h3 style="color:#e74c3c;margin-bottom:0.8rem;font-size:1.2rem;"><i class="fas fa-exclamation-triangle"></i> Day '+ev.day+'：'+ev.title+'</h3>' +
+        '<p style="color:#2c3e50;line-height:1.7;margin-bottom:1rem;">'+ev.desc+'</p><div class="ev-choices" style="display:flex;flex-direction:column;gap:0.6rem;"></div>';
+      ev.choices.forEach(function(ch){
+        var btn = document.createElement('button');
+        btn.style.cssText = 'background:#f8fafc;border:2px solid #dce4ec;border-radius:0.6rem;padding:0.8rem 1rem;cursor:pointer;text-align:left;color:#2c3e50;font-size:0.9rem;';
+        btn.textContent = ch.text;
+        btn.onmouseenter = function(){ this.style.borderColor='#2980d9'; this.style.background='#eef4fb'; };
+        btn.onmouseleave = function(){ this.style.borderColor='#dce4ec'; this.style.background='#f8fafc'; };
+        btn.onclick = function(){
+          modal.remove();
+          if(tc) tc.style.display='block';
+          cb(ch);
+        };
+        box.querySelector('.ev-choices').appendChild(btn);
+      });
+      modal.appendChild(box);
+      document.documentElement.appendChild(modal);
+    }, 100);
+  }
+
+  // 登录事件
+  document.getElementById('loginBtn').addEventListener('click', () => {
+    const u = document.getElementById('username').value.trim();
+    const p = document.getElementById('password').value.trim();
+    if (u === 'HFAdmin' && p === 'supply2024') {
+      totalLogins += 1;
+      saveLocal();
+      updateLoginDisplay();
+      pushStats();
+      state.loggedIn = true; state.completedSteps.add(1);
+      document.getElementById('displayUser').textContent = u;
+      loginScreen.style.display = 'none';
+      mainWrapper.classList.add('active');
+      navigateToStep(1);
+      notify('登录成功 · 欢迎使用3D虚拟仿真平台');
+    } else {
+      alert('用户名或密码错误');
+    }
+  });
+
+  stepBtns.forEach(btn => {
+    btn.addEventListener('click', function() {
+      if (!state.loggedIn) return;
+      const step = parseInt(this.dataset.step);
+      const maxReachable = Math.max(...Array.from(state.completedSteps), state.currentStep);
+      if (step <= maxReachable + 1 || state.completedSteps.has(step)) {
+        navigateToStep(step);
+      } else {
+        notify('请按顺序完成前面的步骤');
+      }
+    });
+  });
+
+  function completeStep(step) {
+    state.completedSteps.add(step);
+    updateStepUI();
+  }
+
+  function navigateToStep(step) {
+    state.currentStep = step;
+    // 切换步骤主题色
+    document.body.className = '';
+    document.body.classList.add('step-' + step);
+    updateStepUI();
+    renderStep(step);
+    stepContent.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function updateStepUI() {
+    stepBtns.forEach(btn => {
+      const s = parseInt(btn.dataset.step);
+      btn.classList.remove('active', 'completed');
+      if (s === state.currentStep) btn.classList.add('active');
+      if (state.completedSteps.has(s)) btn.classList.add('completed');
+    });
+  }
+
+  // ========== 步骤渲染 ==========
+  function renderStep(step) {
+    let html = '';
+    switch(step) {
+      case 1:
+        html = '<h2><i class="fas fa-check-circle" style="color:#00ff88;"></i> 欢迎进入实验平台</h2>' +
+          '<div class="supply-hero">' +
+            '<img src="assets/login-bg.jpg" alt="智能供应链全景">' +
+            '<div class="hero-overlay"><div><h3>新能源锂离子蓄电池供应链数字孪生</h3>' +
+            '<p>从电芯采购到PACK交付，全链路60天动态仿真</p></div></div>' +
+          '</div>' +
+          '<h3 style="margin:1.2rem 0 0.6rem; color:var(--theme);"><i class="fas fa-video"></i> 平台讲解视频</h3>' +
+          '<div style="border-radius:1rem; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.1);">' +
+            '<iframe src="https://player.bilibili.com/player.html?isOutside=true&aid=116883978191815&bvid=BV1K2Mg6cEnP&cid=39762330985&p=1&high_quality=1&autoplay=0" ' +
+            'style="width:100%; height:450px; border:none;" allowfullscreen="true" scrolling="no"></iframe>' +
+          '</div>' +
+          '<p style="margin:1rem 0; line-height:1.8; color:#5a6c7d;">您将扮演供应链运营总监，在以下11个环节中完成关键决策：</p>' +
+          '<div class="flex-row">' +
+            '<div class="card"><i class="fas fa-database" style="color:#00d2ff;"></i> <strong>数据认知</strong><p style="font-size:0.8rem; color:#6c7a89;">销售网点、供应商基础数据</p></div>' +
+            '<div class="card"><i class="fas fa-brain" style="color:#ffaa00;"></i> <strong>知识小测</strong><p style="font-size:0.8rem; color:#6c7a89;">供应链基础知识检验</p></div>' +
+            '<div class="card"><i class="fas fa-chart-line" style="color:#00ff88;"></i> <strong>需求预测</strong><p style="font-size:0.8rem; color:#6c7a89;">基于历史数据预测60天需求</p></div>' +
+            '<div class="card"><i class="fas fa-industry" style="color:#ff6688;"></i> <strong>生产计划</strong><p style="font-size:0.8rem; color:#6c7a89;">分配广州苏州工厂产能</p></div>' +
+          '</div>' +
+          '<div class="flex-row" style="margin-top:0.8rem;">' +
+            '<div class="card"><i class="fas fa-cubes" style="color:#aa88ff;"></i> <strong>BOM物料</strong><p style="font-size:0.8rem; color:#6c7a89;">电芯、电解液、壳体需求</p></div>' +
+            '<div class="card"><i class="fas fa-truck" style="color:#00ccff;"></i> <strong>采购物流</strong><p style="font-size:0.8rem; color:#6c7a89;">供应商选择与路线规划</p></div>' +
+            '<div class="card"><i class="fas fa-vr-cardboard" style="color:#00ff88;"></i> <strong>孪生模拟</strong><p style="font-size:0.8rem; color:#6c7a89;">60天动态运行3D可视化</p></div>' +
+            '<div class="card"><i class="fas fa-trophy" style="color:#ffaa00;"></i> <strong>成绩复盘</strong><p style="font-size:0.8rem; color:#6c7a89;">五维评分与优化建议</p></div>' +
+          '</div>' +
+          '<button class="primary" onclick="window._nav(2)"><i class="fas fa-play"></i> 开始实验 →</button>';
+        break;
+
+      case 2: {
+        let pts = MASTER_DATA.salesPoints.map(p =>
+          '<tr><td>'+p.id+'</td><td>'+p.inventory+'套</td><td>'+p.history.join(', ')+'</td><td><strong>'+p.forecast+'套</strong></td><td>'+p.cap+'套</td></tr>'
+        ).join('');
+        let sup = MASTER_DATA.suppliers.map(s =>
+          '<tr><td>'+s.id+'</td><td>'+s.material+'</td><td>'+s.available+'</td><td>'+s.price+' '+s.currency+'</td></tr>'
+        ).join('');
+        html = '<h2><i class="fas fa-book-open"></i> 步骤2：案例数据认知</h2>' +
+          '<div class="supply-hero" style="height:180px;">' +
+            '<img src="assets/factory-line.jpg" alt="锂离子电池PACK生产线">' +
+            '<div class="hero-overlay"><div><h3>智能化锂离子电池PACK生产车间</h3>' +
+            '<p>电芯模组自动装配，日产能超3000套</p></div></div>' +
+          '</div>' +
+
+          '<details style="background:#f8fafc; border:1px solid #dce4ec; border-radius:0.8rem; padding:0.8rem; margin:1rem 0;" open>' +
+            '<summary style="cursor:pointer; font-weight:600; color:var(--theme); font-size:1rem;"><i class="fas fa-info-circle"></i> 实验背景介绍</summary>' +
+            '<div style="margin-top:0.8rem; line-height:1.9; color:#2c3e50; font-size:0.9rem;">' +
+              '<p><strong>HF公司</strong>是专业锂离子蓄电池生产企业，产品广泛应用于<strong>新能源汽车</strong>与<strong>工业无人机</strong>两大领域：车载PACK配套纯电/混动乘用车与物流车，无人机PACK配套植保无人机、巡检无人机与测绘无人机。主流技术路线为磷酸铁锂（车载长寿命场景）与三元锂（无人机高能量密度场景）。业务覆盖电芯、电解液、结构壳体采购，电池模组与PACK集成生产，成品国内配送与跨境海运。本仿真通过需求预测、采购订单、生产计划、物流运输模拟，学习锂离子蓄电池双场景供应链运营决策，仿真周期为<strong>60天</strong>。</p>' +
+              '<p style="margin-top:0.5rem;"><strong>电池结构层级：</strong>电芯（内部正极、负极、隔膜、电解液、壳体五大件）→ 模组（电芯串并联+绝缘支架+汇流排+NTC+采集线束）→ CTP/CTC（电芯直排入包/底盘）→ PACK（电芯阵列+BMS+热管理+高压继电器+铝合金托盘，是交付整车的完整高压系统）。本仿真产品分两类交付成品：<strong>车载电池PACK</strong>（交付整车厂）与<strong>无人机电池PACK</strong>（交付无人机整机厂），均由电芯×2组、电解液×0.1桶、壳体×1个装配而成，每套由电芯×2组、电解液×0.1桶、壳体×1个装配而成。</p>' +
+              '<p style="margin-top:0.5rem;"><strong>总分评分标准：</strong>总分 = 单位采购成本分 + 单位物流成本分 + 市场满足率分 + 生产满足率分 + 预测偏差率分</p>' +
+              '<ul style="margin-top:0.3rem; padding-left:1.5rem;">' +
+                '<li>单位采购成本 =（总采购费+总原料运输费+堆存费+超限费）/ 总实际产出量</li>' +
+                '<li>单位物流成本 =（总产品运输成本+堆存费+超限费）/ 总实际销售量</li>' +
+                '<li>市场满足率 = 总实际销售量 / 总市场需求量</li>' +
+                '<li>生产满足率 = 总实际产出量 / 总计划产出量</li>' +
+                '<li>预测偏差率 = Σ(|网点预测量-网点实际需求|/网点实际需求) ÷ 网点数</li>' +
+              '</ul>' +
+              '<p style="margin-top:0.5rem;"><strong>核心注意事项：</strong>多销售网点需求预测、多原料多供应商采购（电芯/电解液/壳体）、跨境多式联运物流、库存上限超限收费、多币种汇率结算。</p>' +
+            '</div>' +
+          '</details>' +
+
+          '<details style="background:#f8fafc; border:1px solid #dce4ec; border-radius:0.8rem; padding:0.8rem; margin:0 0 1rem 0;">' +
+            '<summary style="cursor:pointer; font-weight:600; color:var(--theme); font-size:1rem;"><i class="fas fa-clipboard-list"></i> HF锂离子蓄电池操作手册 V1.0（点击展开）</summary>' +
+            '<div style="margin-top:0.8rem; line-height:1.9; color:#2c3e50; font-size:0.88rem;">' +
+              '<p><strong>1. 系统概述：</strong>本平台为《HF锂离子蓄电池 · 3D数字孪生供应链虚拟仿真实验》，基于Three.js构建3D可视化场景，模拟锂离子蓄电池PACK（新能源汽车车载版+工业无人机版）从电芯采购、模组集成、PACK装配、物流配送到客户交付的完整供应链流程。用户扮演供应链管理者，在11个步骤中完成决策，通过60天模拟运行获得综合评分。</p>' +
+              '<p style="margin-top:0.4rem;"><strong>2. 环境要求：</strong>推荐最新版Chrome/Edge浏览器，需联网加载CDN资源，建议分辨率≥1366×768。</p>' +
+              '<p style="margin-top:0.4rem;"><strong>3. 登录：</strong>用户名 <code style="background:#eef4fb;padding:0.1rem 0.4rem;border-radius:0.3rem;">HFAdmin</code> / 密码 <code style="background:#eef4fb;padding:0.1rem 0.4rem;border-radius:0.3rem;">supply2024</code>，点击"进入仿真实验"。</p>' +
+              '<p style="margin-top:0.4rem;"><strong>4. 实验流程（11步）：</strong></p>' +
+              '<ol style="padding-left:1.5rem;">' +
+                '<li><strong>步骤1 欢迎：</strong>观看B站讲解视频，了解平台功能，点击"开始实验"。</li>' +
+                '<li><strong>步骤2 案例数据：</strong>阅读实验背景、本操作手册，浏览销售网点、供应商、评分标准表格，勾选"我已阅读"。</li>' +
+                '<li><strong>步骤3 知识小测：</strong>完成3道锂电池结构基础题，选择答案后立即反馈对错。</li>' +
+                '<li><strong>步骤4 需求预测：</strong>拖动滑块调整4个网点的60天预测量；下方选择市场投标策略（保守/均衡/激进）。</li>' +
+                '<li><strong>步骤5 生产补货：</strong>在广州、苏州两PACK厂分配计划产量；可选工厂扩建（产能+20%）和融资贷款（30/90/180天）。</li>' +
+                '<li><strong>步骤6 物料BOM：</strong>查看电芯×2组、电解液×0.1桶、壳体×1个需求，可手动微调考虑损耗。</li>' +
+                '<li><strong>步骤7 供应商选择：</strong>点击卡片多选供应商（电芯/电解液/壳体），需覆盖三种物料，支持AI选最低价。</li>' +
+                '<li><strong>步骤8 物流计划：</strong>选择路线，调整运输天数和运输量，自动算到达日期；支持AI自动规划。</li>' +
+                '<li><strong>步骤9 数字孪生：</strong>调节外部参数，运行60天模拟，过程中会弹出7个风险事件选择框（电芯限产、汇率波动、需求超预期、海运延误、良品率下降、暴雪封路、油价上涨）。</li>' +
+                '<li><strong>步骤10 成绩：</strong>查看五维评分、五维运营考核指标（净资产/市场占有率/库存周转率/准时交货率/现金流），导出Excel。</li>' +
+                '<li><strong>步骤11 复盘分析：</strong>查看桑基图、关键数字、AI优化建议，记录复盘笔记。</li>' +
+              '</ol>' +
+              '<p style="margin-top:0.4rem;"><strong>5. 评分标准：</strong>总分100 = 采购成本(25) + 物流成本(25) + 市场满足率(20) + 生产满足率(15) + 预测偏差(15)。</p>' +
+              '<p style="margin-top:0.4rem;"><strong>6. 常见问题：</strong></p>' +
+              '<ul style="padding-left:1.5rem;">' +
+                '<li>无法下一步：请检查当前步骤必填项（滑块已保存、卡片已选择、复选框已勾选）。</li>' +
+                '<li>成绩记录：存储在浏览器本地LocalStorage，清除缓存会丢失，建议定期导出Excel备份。</li>' +
+                '<li>页面显示异常：按Ctrl+F5强制刷新，或换Chrome/Edge浏览器。</li>' +
+                '<li>风险事件弹窗：运行模拟后会自动弹出，请依次做出选择，共7次。</li>' +
+              '</ul>' +
+            '</div>' +
+          '</details>' +
+
+          '<h3><i class="fas fa-store"></i> 销售网点信息</h3>' +
+          '<table><thead><tr><th>网点</th><th>期初库存</th><th>近6月历史销量</th><th>初始预测</th><th>库存上限</th></tr></thead><tbody>'+pts+'</tbody></table>' +
+          '<h3 style="margin-top:1rem;"><i class="fas fa-truck"></i> 供应商信息</h3>' +
+          '<table><thead><tr><th>供应商</th><th>物料</th><th>可供货量</th><th>单价</th></tr></thead><tbody>'+sup+'</tbody></table>' +
+          '<div class="card" style="margin-top:1rem;">' +
+            '<h4><i class="fas fa-star"></i> 评分标准（满分100分）</h4>' +
+            '<p style="color:#5a6c7d; line-height:1.8;">采购成本(25分) + 物流成本(25分) + 市场满足率(20分) + 生产满足率(15分) + 预测偏差(15分)</p>' +
+          '</div>' +
+          '<label style="display:block; margin-top:1rem; cursor:pointer;"><input type="checkbox" id="understandData"> 我已阅读并理解实验数据与评分标准</label>' +
+          '<button class="primary" id="confirmStep2">确认，进入知识小测 →</button>';
+        break;
+      }
+
+      case 3: {
+        // 新增：知识小测环节
+        html = '<h2><i class="fas fa-brain"></i> 步骤3：供应链知识小测</h2>' +
+          '<p style="color:#6c7a89; margin-bottom:1rem;">完成以下3道选择题，检验您对供应链基础知识的掌握程度。</p>' +
+          '<div id="quizContainer"></div>' +
+          '<div id="quizResult" class="hidden" style="margin-top:1rem;"></div>' +
+          '<button class="primary hidden" id="submitQuizBtn">提交答案</button>' +
+          '<button class="secondary hidden" id="nextAfterQuizBtn">完成小测，进入需求预测 →</button>';
+        break;
+      }
+
+      case 4: {
+        let sliders = MASTER_DATA.salesPoints.map(p =>
+          '<div class="card interactive"><h4>'+p.id+'</h4>' +
+          '<p style="font-size:0.8rem; color:#6c7a89;">历史月均：'+Math.round(p.history.reduce((a,b)=>a+b,0)/6)+'套</p>' +
+          '<div class="slider-group"><label>预测量：<span id="'+p.id+'_val" style="color:#00ff88; font-weight:bold;">'+state.demandForecast[p.id]+'</span> 套</label>' +
+          '<input type="range" id="'+p.id+'_slider" min="10000" max="40000" value="'+state.demandForecast[p.id]+'" step="100"></div>' +
+          '<div class="progress-bar"><div class="progress-fill" style="width:'+(state.demandForecast[p.id]/40000*100)+'%"></div></div></div>'
+        ).join('');
+        html = '<h2><i class="fas fa-chart-line"></i> 步骤4：需求预测</h2>' +
+          '<p style="color:#6c7a89;">根据各销售网点近6个月历史销量，调整未来60天需求预测量。</p>' +
+          '<div class="flex-row">'+sliders+'</div>' +
+          '<div id="demandChart" style="height:280px; width:100%; margin-top:1rem;"></div>' +
+          '<button class="primary" id="saveForecast"><i class="fas fa-save"></i> 保存预测</button>' +
+          '<button class="secondary" id="resetForecast">恢复默认值</button>' +
+          '<button class="secondary" id="aiForecast" style="border-color:#9b59b6;color:#9b59b6;"><i class="fas fa-robot"></i> AI智能填充</button>' +
+          '<div class="card" style="margin-top:1.2rem; border-left:4px solid #e67e22;">' +
+            '<h4><i class="fas fa-gavel" style="color:#e67e22;"></i> V3.0 新增：市场投标策略</h4>' +
+            '<p style="font-size:0.88rem; color:#5a6c7d; line-height:1.7; margin:0.5rem 0;">客户发布招标需求，你需要决定投标报价。投标价过高会丢标，过低则利润受损。系统按<b>交付能力(40%)+投标价格(40%)+企业信用(20%)</b>打分。</p>' +
+            '<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:0.8rem; margin-top:0.8rem;">' +
+              '<div style="background:#fef5e7; border:2px solid #f5cba7; border-radius:0.6rem; padding:0.8rem; cursor:pointer;" onclick="selectBid(this,0)">' +
+                '<div style="font-weight:700; color:#d35400;">保守投标</div>' +
+                '<div style="font-size:0.8rem; color:#7b3f00; margin-top:0.3rem;">报价：420元/套<br>中标率：65%<br>利润率：高</div>' +
+              '</div>' +
+              '<div style="background:#eafaf1; border:2px solid #a9dfbf; border-radius:0.6rem; padding:0.8rem; cursor:pointer;" onclick="selectBid(this,1)">' +
+                '<div style="font-weight:700; color:#1e8449;">均衡投标</div>' +
+                '<div style="font-size:0.8rem; color:#145a32; margin-top:0.3rem;">报价：395元/套<br>中标率：82%<br>利润率：中</div>' +
+              '</div>' +
+              '<div style="background:#fdedec; border:2px solid #f5b7b1; border-radius:0.6rem; padding:0.8rem; cursor:pointer;" onclick="selectBid(this,2)">' +
+                '<div style="font-weight:700; color:#c0392b;">激进投标</div>' +
+                '<div style="font-size:0.8rem; color:#7b241c; margin-top:0.3rem;">报价：370元/套<br>中标率：95%<br>利润率：低</div>' +
+              '</div>' +
+            '</div>' +
+            '<p style="font-size:0.82rem; color:#95a5a6; margin-top:0.6rem;"><i class="fas fa-info-circle"></i> 投标需支付保证金（招标数量×投标价×1%），未中标开标日返还。</p>' +
+          '</div>';
+        break;
+      }
+
+      case 5: {
+        let totalDemand = Object.values(state.demandForecast).reduce((a,b)=>a+b,0);
+        let facs = MASTER_DATA.factories.production.map(f =>
+          '<div class="card interactive"><h4><i class="fas fa-industry"></i> '+f.factory+'</h4>' +
+          '<p style="font-size:0.85rem;">日产能：<strong style="color:#00d2ff;">'+f.daily+'套</strong> | 库存：'+f.stock+'套</p>' +
+          '<p style="font-size:0.85rem;">60天最大产能：<strong style="color:#00ff88;">'+f.total+'套</strong></p>' +
+          '<label style="margin-top:0.5rem; display:block;">计划产量：<input type="number" id="'+f.factory+'_prod" value="'+(state.productionPlan[f.factory]||f.total)+'" min="0" max="'+f.total+'" step="100"></label></div>'
+        ).join('');
+        html = '<h2><i class="fas fa-industry"></i> 步骤5：生产补货计划</h2>' +
+          '<div class="card" style="margin-bottom:1rem; text-align:center;">' +
+            '<h4>总需求预测</h4><span class="value">'+totalDemand.toLocaleString()+'</span> <span style="color:#6c7a89; font-size:0.9rem;">套</span></div>' +
+          '<div class="flex-row">'+facs+'</div>' +
+          '<div id="replenishmentDisplay" style="margin-top:1rem;"></div>' +
+          '<button class="secondary" id="autoProd" style="border-color:#9b59b6;color:#9b59b6;"><i class="fas fa-robot"></i> 按产能自动分配</button>' +
+          '<div class="card" style="margin-top:1rem; border-left:4px solid #8e44ad;">' +
+            '<h4><i class="fas fa-building" style="color:#8e44ad;"></i> V3.0 新增：工厂扩建与融资贷款</h4>' +
+            '<p style="font-size:0.88rem; color:#5a6c7d; line-height:1.7; margin:0.5rem 0;">初始资金2000万。如需扩大产能或补充流动资金，可向金融机构抵押贷款。固定资产（工厂/仓库）可抵押60%价值贷款。</p>' +
+            '<div id="upgradeCard" style="background:#f4ecf7; border:2px solid #d2b4de; border-radius:0.6rem; padding:0.8rem; margin-top:0.5rem; cursor:pointer;" onclick="toggleUpgrade(this)">' +
+              '<div style="font-weight:700; color:#6c3483;">扩建苏州工厂（中型→大型）</div>' +
+              '<div style="font-size:0.82rem; color:#512e5f; margin-top:0.3rem;">投资800万 | 产能+20% | 建设周期7天 | 日管理成本+1.1万</div>' +
+            '</div>' +
+            '<div style="margin-top:0.8rem; font-weight:600; color:#2c3e50;">选择贷款周期（企业信用等级：良好，利率基准）：</div>' +
+            '<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:0.8rem; margin-top:0.5rem;">' +
+              '<div style="background:#eaf2f8; border:2px solid #aed6f1; border-radius:0.6rem; padding:0.8rem; cursor:pointer;" onclick="selectLoan(this,30)">' +
+                '<div style="font-weight:700; color:#21618c;">30天（一期）</div>' +
+                '<div style="font-size:0.8rem; color:#1a5276; margin-top:0.3rem;">利率1.7%/期<br>最高贷500万</div>' +
+              '</div>' +
+              '<div style="background:#eaf2f8; border:2px solid #aed6f1; border-radius:0.6rem; padding:0.8rem; cursor:pointer;" onclick="selectLoan(this,90)">' +
+                '<div style="font-weight:700; color:#21618c;">90天（三期）</div>' +
+                '<div style="font-size:0.8rem; color:#1a5276; margin-top:0.3rem;">利率1.9%/期<br>最高贷1000万</div>' +
+              '</div>' +
+              '<div style="background:#eaf2f8; border:2px solid #aed6f1; border-radius:0.6rem; padding:0.8rem; cursor:pointer;" onclick="selectLoan(this,180)">' +
+                '<div style="font-weight:700; color:#21618c;">180天（六期）</div>' +
+                '<div style="font-size:0.8rem; color:#1a5276; margin-top:0.3rem;">利率2.1%/期<br>最高贷1500万</div>' +
+              '</div>' +
+            '</div>' +
+            '<p style="font-size:0.82rem; color:#95a5a6; margin-top:0.6rem;"><i class="fas fa-exclamation-triangle" style="color:#e74c3c;"></i> 注意：贷款超期15天未还，工厂/仓库将被银行罚没清算；现金流为负即破产。</p>' +
+          '</div>' +
+          '<button class="primary" id="confirmProduction">确认生产计划 →</button>';
+        break;
+      }
+
+      case 6: {
+        let totalProd = Object.values(state.productionPlan).reduce((a,b)=>a+b,0);
+        state.materialRequirements = {
+          "电芯": totalProd * 2,
+          "电解液": parseFloat((totalProd * 0.1).toFixed(1)),
+          "壳体": totalProd
+        };
+        html = '<h2><i class="fas fa-cubes"></i> 步骤6：物料需求 BOM 展开</h2>' +
+          '<p style="color:#6c7a89; margin-bottom:1rem;">基于生产计划 <strong style="color:#00d2ff;">'+totalProd.toLocaleString()+'</strong> 套，自动展开物料清单：</p>' +
+          '<div class="bom-table">' +
+            '<h4 style="margin-bottom:0.5rem; color:var(--theme);">BOM 物料清单（每套锂离子蓄电池PACK，车载/无人机通用）</h4>' +
+            '<table><thead><tr><th>物料</th><th>单耗</th><th>单位</th><th>总需求量</th><th>说明</th></tr></thead><tbody>' +
+            '<tr><td><img src="assets/li-cell.jpg" style="width:50px;height:40px;object-fit:cover;border-radius:4px;vertical-align:middle;margin-right:8px;"><i class="fas fa-bolt"></i> 电芯</td><td>2</td><td>组</td><td><strong style="color:var(--theme);">'+(totalProd*2).toLocaleString()+'</strong></td><td>方形铝壳/软包电芯（磷酸铁锂或三元）</td></tr>' +
+            '<tr><td><img src="assets/li-electrolyte.jpg" style="width:50px;height:40px;object-fit:cover;border-radius:4px;vertical-align:middle;margin-right:8px;"><i class="fas fa-tint"></i> 电解液</td><td>0.1</td><td>桶</td><td><strong style="color:var(--theme);">'+(totalProd*0.1).toFixed(1)+'</strong></td><td>锂盐+有机溶剂（LiPF6/碳酸酯类）</td></tr>' +
+            '<tr><td><img src="assets/li-shell.jpg" style="width:50px;height:40px;object-fit:cover;border-radius:4px;vertical-align:middle;margin-right:8px;"><i class="fas fa-box"></i> 壳体</td><td>1</td><td>个</td><td><strong style="color:var(--theme);">'+totalProd.toLocaleString()+'</strong></td><td>铝合金结构托盘（PACK外壳）</td></tr>' +
+            '</tbody></table>' +
+          '</div>' +
+          '<div class="card" style="margin-top:0.8rem;">' +
+            '<h4><i class="fas fa-sliders-h"></i> 手动微调（考虑损耗率）</h4>' +
+            '<div style="display:flex; gap:1.5rem; flex-wrap:wrap; margin-top:0.5rem;">' +
+            Object.keys(state.materialRequirements).map(m =>
+              '<label>'+m+'：<input type="number" id="mat_'+m+'" value="'+state.materialRequirements[m]+'" step="1"> '+(m==='电芯'?'组':m==='电解液'?'桶':'个')+'</label>'
+            ).join('') +
+            '</div></div>' +
+          '<button class="primary" id="confirmBOM">确认物料需求 →</button>';
+        break;
+      }
+
+      case 7: {
+        let cards = MASTER_DATA.suppliers.map(s => {
+          let sel = state.selectedSuppliers[s.id] ? 'selected' : '';
+          return '<div class="supplier-card '+sel+'" data-id="'+s.id+'">' +
+            '<span><strong>'+s.id+'</strong> <span class="tag">'+s.material+'</span></span>' +
+            '<span style="font-size:0.85rem;">'+s.available+' | ¥'+s.price+'</span>' +
+            '<i class="fas '+(sel?'fa-check-circle':'fa-circle')+'" style="color:'+(sel?'#00ff88':'#445')+';"></i></div>';
+        }).join('');
+        let selectedList = Object.keys(state.selectedSuppliers).length
+          ? Object.keys(state.selectedSuppliers).map(id => '<span class="tag green">'+id+'</span>').join(' ')
+          : '<p style="color:#667;">尚未选择</p>';
+        html = '<h2><i class="fas fa-truck-loading"></i> 步骤7：供应商选择</h2>' +
+          '<p style="color:#6c7a89;">点击卡片选择供应商（可多选），需覆盖三种物料需求。</p>' +
+          '<div id="supplierList">'+cards+'</div>' +
+          '<div class="card" style="margin-top:0.8rem;"><h4>已选供应商</h4><div id="selectedSuppliersDisplay">'+selectedList+'</div></div>' +
+          '<button class="secondary" id="cheapestSuppliers" style="border-color:#9b59b6;color:#9b59b6;"><i class="fas fa-robot"></i> 自动选最低价</button>' +
+          '<button class="primary" id="confirmSuppliers">确认供应商 →</button>';
+        break;
+      }
+
+      case 8: {
+        let today = new Date();
+        let todayStr = today.getFullYear()+'年'+(today.getMonth()+1)+'月'+today.getDate()+'日';
+        let routesHtml = MASTER_DATA.routes.map(r => {
+          let qty = state.routeQuantities[r.id] || 0;
+          let days = state.routeDays[r.id] || r.days;
+          let sel = state.selectedRoutes[r.id] ? 'selected' : '';
+          let icon = r.mode==='汽运'?'fa-truck':r.mode==='铁路'?'fa-train':'fa-ship';
+          let arrive = new Date(today);
+          arrive.setDate(arrive.getDate() + days);
+          let arriveStr = (arrive.getMonth()+1)+'月'+arrive.getDate()+'日';
+          return '<div class="route-item '+sel+'" data-id="'+r.id+'">' +
+            '<div><i class="fas '+icon+'" style="color:var(--theme);"></i> <strong>'+r.from+' → '+r.to+'</strong><br>' +
+            '<span style="font-size:0.8rem; color:#6c7a89;">'+r.dist+'km · '+r.mode+' · 出发：'+todayStr+' · 预计到达：<span class="arrive-date">'+arriveStr+'</span></span></div>' +
+            '<div style="display:flex; align-items:center; gap:0.8rem;">' +
+            '<label style="font-size:0.8rem;">天数:<input type="number" class="route-days" data-route="'+r.id+'" value="'+days+'" min="1" max="60" style="width:60px;"></label>' +
+            '<label style="font-size:0.8rem;">运输量:<input type="number" class="route-qty" data-route="'+r.id+'" value="'+qty+'" min="0" step="10" style="width:80px;"></label>' +
+            '<i class="fas '+(sel?'fa-check-circle':'fa-circle')+'" style="color:'+(sel?'#27ae60':'#aab')+';"></i></div></div>';
+        }).join('');
+        html = '<h2><i class="fas fa-ship"></i> 步骤8：物流运输计划</h2>' +
+          '<p style="color:#6c7a89;">今天：<strong>'+todayStr+'</strong> · 调整运输天数自动计算到达日期，对比不同方案。</p>' +
+
+          '<div class="card" style="background:linear-gradient(135deg,#f0e6ff,#e8dfff); border:1px solid #9b59b6; margin-bottom:1rem;">' +
+            '<h4 style="color:#7d3c98;"><i class="fas fa-robot"></i> AI物流优化建议</h4>' +
+            '<ul style="font-size:0.85rem; color:#4a3a5e; line-height:1.9; margin-top:0.4rem; padding-left:1.2rem;">' +
+              '<li><strong>成本优先：</strong>海运最便宜但最慢（9-15天），适合日本总代等远距离跨境订单；汽运最快（2-3天）但贵，适合国内紧急补货。</li>' +
+              '<li><strong>多式联运：</strong>铁路+海运组合（如苏州→洋山港→横滨）比纯海运便宜30%，比纯汽运快5天，是跨境最优解。</li>' +
+              '<li><strong>库存上限：</strong>每个网点有库存上限，超了要交超限费。建议分批运输，不要一次发太多。</li>' +
+              '<li><strong>日本总代：</strong>涉及日元汇率，选盐田港出发比洋山港便宜，但多6天。时间充裕选盐田港。</li>' +
+              '<li><strong>原料运输：</strong>供应商到工厂也需要运输距离，电芯重、体积大，优先选就近供应商（如宝鸡→广州）。</li>' +
+            '</ul>' +
+          '</div>' +
+
+          '<div id="routesList">'+routesHtml+'</div>' +
+          '<div id="routeMap" style="height:300px; margin-top:1rem;"></div>' +
+          '<button class="secondary" id="aiLogistics" style="border-color:#9b59b6;color:#9b59b6;margin-right:0.5rem;"><i class="fas fa-robot"></i> AI自动规划最优路线</button>' +
+          '<button class="primary" id="confirmRoutes">确认物流计划 →</button>';
+        break;
+      }
+
+      case 9: {
+        let totalDemand = Object.values(state.demandForecast).reduce((a,b)=>a+b,0);
+        let totalProd = Object.values(state.productionPlan).reduce((a,b)=>a+b,0);
+        html = '<h2><i class="fas fa-vr-cardboard"></i> 步骤9：数字孪生模拟</h2>' +
+          '<div class="twin-panel" style="display:flex; gap:1rem; flex-wrap:wrap;">' +
+            '<div class="card" style="flex:1; min-width:250px;"><h4><i class="fas fa-sliders-h"></i> 外部环境参数调节</h4>' +
+              '<div class="slider-group"><label>锂矿价格指数：<span id="lithiumVal" style="color:#00ff88;">100</span></label><input type="range" id="lithiumSlider" min="50" max="150" value="100"></div>' +
+              '<div class="slider-group"><label>海运周期波动：<span id="shippingVal" style="color:#00ff88;">25</span> 天</label><input type="range" id="shippingSlider" min="15" max="45" value="25"></div>' +
+              '<div class="slider-group"><label>生产良品率：<span id="yieldVal" style="color:#00ff88;">92</span>%</label><input type="range" id="yieldSlider" min="80" max="99" value="92"></div>' +
+              '<div class="slider-group"><label>电池回收率：<span id="recycleVal" style="color:#00ff88;">35</span>%</label><input type="range" id="recycleSlider" min="0" max="70" value="35"></div>' +
+            '</div>' +
+            '<div class="card" style="flex:1; min-width:250px;"><h4><i class="fas fa-tachometer-alt"></i> 实时指标监控</h4>' +
+              '<div class="gauge-grid">' +
+                '<div class="gauge-item">单位电池成本<br><span class="value" id="twinCost">90.0</span><br><span style="font-size:0.7rem; color:#6c7a89;">$/kWh</span></div>' +
+                '<div class="gauge-item">碳排放强度<br><span class="value" id="twinCarbon">85.0</span><br><span style="font-size:0.7rem; color:#6c7a89;">kgCO2</span></div>' +
+                '<div class="gauge-item">供应链周期<br><span class="value" id="twinDays">45.0</span><br><span style="font-size:0.7rem; color:#6c7a89;">天</span></div>' +
+              '</div></div>' +
+          '</div>' +
+          '<div class="map3d-card" id="supplierMap3d"><div class="map-label"><i class="fas fa-map-marker-alt"></i> 3D供应链节点地图（拖拽旋转）</div></div>' +
+          '<div id="twinChart" style="height:240px; margin-top:0.5rem;"></div>' +
+          '<div class="card" style="margin-top:0.5rem;"><h4>配置摘要</h4>' +
+            '<p style="font-size:0.9rem;">总需求：<strong style="color:#00d2ff;">'+totalDemand.toLocaleString()+'</strong>套 | ' +
+            '总生产：<strong style="color:#00d2ff;">'+totalProd.toLocaleString()+'</strong>套 | ' +
+            '供应商：<strong style="color:#00ff88;">'+Object.keys(state.selectedSuppliers).length+'</strong>家 | ' +
+            '路线：<strong style="color:#00ff88;">'+Object.keys(state.selectedRoutes).length+'</strong>条</p></div>' +
+          '<button class="primary" id="runFullSim" style="font-size:1.1rem; padding:0.8rem 2.5rem;"><i class="fas fa-rocket"></i> 运行60天动态模拟</button>' +
+          '<div id="simResultText" class="hidden" style="margin-top:1rem;"></div>' +
+          '<button class="secondary hidden" id="viewResults">查看实验成绩 →</button>';
+        break;
+      }
+
+      case 10: {
+        if (!state.simulationResult) {
+          html = '<h2><i class="fas fa-trophy"></i> 实验成绩</h2><p style="color:#6c7a89;">尚未运行模拟，请先完成步骤9。</p><button class="primary" onclick="window._nav(9)">返回数字孪生</button>';
+        } else {
+          const r = state.simulationResult;
+          html = '<h2><i class="fas fa-trophy"></i> 步骤10：实验成绩评定</h2>' +
+            '<div class="gauge-grid">' +
+              '<div class="gauge-item"><h4>采购成本</h4><span class="value">'+r.unitProcCost+'</span><p style="font-size:0.8rem; color:#6c7a89;">得分：'+r.procScore+'/25</p></div>' +
+              '<div class="gauge-item"><h4>物流成本</h4><span class="value">'+r.unitLogCost+'</span><p style="font-size:0.8rem; color:#6c7a89;">得分：'+r.logScore+'/25</p></div>' +
+              '<div class="gauge-item"><h4>市场满足率</h4><span class="value">'+r.fillRate+'%</span><p style="font-size:0.8rem; color:#6c7a89;">得分：'+r.fillScore+'/20</p></div>' +
+              '<div class="gauge-item"><h4>生产满足率</h4><span class="value">'+r.prodRate+'%</span><p style="font-size:0.8rem; color:#6c7a89;">得分：'+r.prodScore+'/15</p></div>' +
+              '<div class="gauge-item"><h4>预测偏差</h4><span class="value">'+r.deviation+'%</span><p style="font-size:0.8rem; color:#6c7a89;">得分：'+r.devScore+'/15</p></div>' +
+            '</div>' +
+            '<div class="card" style="margin-top:1rem; border-left:4px solid #27ae60;">' +
+              '<h4><i class="fas fa-balance-scale" style="color:#27ae60;"></i> 五维运营考核指标</h4>' +
+              '<div style="display:grid; grid-template-columns:repeat(5,1fr); gap:0.6rem; margin-top:0.6rem; text-align:center;">' +
+                '<div style="background:#eafaf1; padding:0.6rem; border-radius:0.5rem;"><div style="font-weight:700; color:#1e8449;">净资产</div><div style="font-size:0.8rem; color:#145a32;">'+(2000 - 800*state.factoryUpgrade - (state.loanChoice?state.loanChoice*0.05:0)).toFixed(0)+'万</div></div>' +
+                '<div style="background:#eaf2f8; padding:0.6rem; border-radius:0.5rem;"><div style="font-weight:700; color:#21618c;">市场占有率</div><div style="font-size:0.8rem; color:#1a5276;">'+r.fillRate+'%</div></div>' +
+                '<div style="background:#fef9e7; padding:0.6rem; border-radius:0.5rem;"><div style="font-weight:700; color:#9a7d0a;">库存周转率</div><div style="font-size:0.8rem; color:#7d6608;">'+(r.fillRate/100*8.2).toFixed(1)+'次/季</div></div>' +
+                '<div style="background:#f4ecf7; padding:0.6rem; border-radius:0.5rem;"><div style="font-weight:700; color:#6c3483;">准时交货率</div><div style="font-size:0.8rem; color:#512e5f;">'+(r.fillRate-2)+'%</div></div>' +
+                '<div style="background:#fdedec; padding:0.6rem; border-radius:0.5rem;"><div style="font-weight:700; color:#c0392b;">现金流管理</div><div style="font-size:0.8rem; color:#7b241c;">'+(state.loanChoice?'有贷款':'现金流充足')+'</div></div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="card" style="text-align:center; margin-top:1rem;">' +
+              '<h3>本次实验总分</h3>' +
+              '<span style="font-size:3rem; font-weight:700; color:var(--theme);">'+r.totalScore+'</span> <span style="color:#6c7a89;">/ 100</span>' +
+            '</div>' +
+            '<div style="margin-top:1rem;"><h4><i class="fas fa-list"></i> 实验成绩记录（最新 ' + LEDGER_ROWS + ' 条，与末步台账一致）</h4>' +
+            '<div class="score-roll" id="scoreRollContainer"></div></div>' +
+            '<div style="margin-top:0.8rem; display:flex; gap:0.8rem; flex-wrap:wrap;">' +
+              '<button class="btn-download" id="downloadExcelBtn"><i class="fas fa-file-excel"></i> 导出成绩Excel</button>' +
+              '<button class="secondary" id="goToReview">进入复盘分析 →</button></div>' +
+            '<div style="margin-top:0.8rem;"><h4><i class="fas fa-search"></i> 历史成绩查询</h4>' +
+            '<input type="text" id="historySearchInput" placeholder="输入用户名搜索" style="background:#fff;border:1px solid #d0d8e0;color:#2c3e50;padding:0.4rem 1rem;border-radius:1rem;width:200px;">' +
+            '<button class="primary" id="historySearchBtn" style="padding:0.4rem 1rem; margin-left:0.4rem;">查询</button>' +
+            '<div id="historyResult" style="margin-top:0.4rem;"></div></div>';
+          setTimeout(() => { renderScoreRoll(); }, 100);
+        }
+        break;
+      }
+
+      case 11: {
+        let totalDemand = Object.values(state.demandForecast).reduce((a,b)=>a+b,0);
+        let totalProd = Object.values(state.productionPlan).reduce((a,b)=>a+b,0);
+        let supCnt = Object.keys(state.selectedSuppliers).length;
+        let routeCnt = Object.keys(state.selectedRoutes).length;
+        let transQty = Object.values(state.routeQuantities).reduce((a,b)=>a+(parseInt(b)||0),0);
+        html = '<h2><i class="fas fa-redo"></i> 步骤11：复盘分析</h2>' +
+          '<div id="reviewFlowChart" style="height:350px; margin:0.8rem 0;"></div>' +
+          '<div class="flex-row">' +
+            '<div class="card"><h4><i class="fas fa-calculator"></i> 关键决策数据</h4>' +
+              '<table>' +
+              '<tr><td>总需求预测</td><td><strong>'+totalDemand.toLocaleString()+'</strong> 套</td></tr>' +
+              '<tr><td>总生产计划</td><td><strong>'+totalProd.toLocaleString()+'</strong> 套</td></tr>' +
+              '<tr><td>选定供应商</td><td><strong>'+supCnt+'</strong> 家</td></tr>' +
+              '<tr><td>运输路线</td><td><strong>'+routeCnt+'</strong> 条</td></tr>' +
+              '<tr><td>总运输量</td><td><strong>'+transQty.toLocaleString()+'</strong> 套</td></tr>' +
+              '<tr><td>知识小测得分</td><td><strong style="color:#00ff88;">'+state.quizScore+'</strong>/3</td></tr>' +
+              '</table></div>' +
+            '<div class="card"><h4><i class="fas fa-lightbulb"></i> 智能优化建议</h4><div id="suggestionList"></div></div>' +
+          '</div>' +
+          '<div class="card" style="margin-top:0.8rem;"><h4><i class="fas fa-sticky-note"></i> 实验复盘笔记</h4>' +
+            '<textarea id="reviewNotes" style="width:100%; height:70px; background:#fff; color:#2c3e50; border:1px solid #d0d8e0; border-radius:0.6rem; padding:0.6rem; margin-top:0.4rem;" placeholder="记录本次实验的收获与改进方向..."></textarea></div>' +
+          '<div class="card" style="margin-top:0.8rem;">' +
+            '<h4><i class="fas fa-table"></i> 实验成绩台账（最新 ' + LEDGER_ROWS + ' 条 · Excel 表格视图 · 实时更新）</h4>' +
+            '<div class="ledger-wrap"><table class="ledger-table" id="ledgerTable"></table></div>' +
+            '<div style="margin-top:0.8rem; display:flex; gap:0.8rem; flex-wrap:wrap; align-items:center;">' +
+              '<button class="btn-download" id="downloadLedgerBtn"><i class="fas fa-file-excel"></i> 导出台账Excel</button>' +
+              '<button class="secondary" id="refreshLedgerBtn"><i class="fas fa-sync-alt"></i> 刷新台账</button>' +
+              '<span style="font-size:0.8rem; color:#6c7a89;">累计参与实验：<strong style="color:var(--theme);" id="participantTotalBadge">' + participantTotal() + '</strong> 人次（基线 ' + PARTICIPANT_BASE + ' 人次，后期每次登录按 ' + LOGIN_INCREMENT + ' 人次登记）</span>' +
+            '</div></div>' +
+          '<button class="primary" id="saveReview"><i class="fas fa-save"></i> 保存复盘笔记</button>' +
+          '<button class="secondary" id="resetExperiment"><i class="fas fa-redo"></i> 重新开始实验</button>';
+        setTimeout(() => { renderLedger(); }, 100);
+        break;
+      }
+
+      default: html = '<p>未知步骤</p>';
+    }
+    stepContent.innerHTML = html;
+    bindEvents(step);
+    if (step === 3) initQuiz();
+    if (step === 4) initDemandChart();
+    if (step === 8) initRouteMap();
+    if (step === 9) { initTwinDashboard(); updateTwinMetrics(); initSupplierMap3D(); }
+    if (step === 11) initReviewFlowChart();
+  }
+
+  // ========== 知识小测 ==========
+  const quizData = [
+    {
+      q: "1. 锂离子蓄电池（车载/无人机通用）电芯内部五大件不包括以下哪项？",
+      options: ["正极", "隔膜", "传动齿轮", "壳体"],
+      answer: 2,
+      explain: "电芯内部五大件为正极、负极、隔膜、电解液、壳体，传动齿轮与电池无关。"
+    },
+    {
+      q: "2. 电芯直接排列在电池包内部、取消模组这一层的技术是？",
+      options: ["CTP（Cell To Pack）", "传统模组方案", "铅酸电池", "超级电容"],
+      answer: 0,
+      explain: "CTP（Cell To Pack）技术取消模组层，电芯直接排布在电池包内；刀片、麒麟电池都属于CTP方案。"
+    },
+    {
+      q: "3. 工厂或仓库库存超过上限时会产生什么费用？",
+      options: ["运输费", "超限费", "采购费", "保险费"],
+      answer: 1,
+      explain: "库存超过上限会产生超限费，需合理安排分批次送货控制库存。"
+    }
+  ];
+  let quizAnswers = [];
+
+  function initQuiz() {
+    quizAnswers = [];
+    const container = document.getElementById('quizContainer');
+    if (!container) return;
+    container.innerHTML = quizData.map((item, qi) =>
+      '<div class="card" style="margin-bottom:0.8rem;">' +
+      '<p style="font-weight:600; margin-bottom:0.5rem;">'+item.q+'</p>' +
+      item.options.map((opt, oi) =>
+        '<div class="quiz-option" data-q="'+qi+'" data-o="'+oi+'"><span class="opt-label">'+String.fromCharCode(65+oi)+'</span><span>'+opt+'</span></div>'
+      ).join('') +
+      '</div>'
+    ).join('');
+    document.querySelectorAll('.quiz-option').forEach(opt => {
+      opt.addEventListener('click', function() {
+        const q = parseInt(this.dataset.q);
+        const o = parseInt(this.dataset.o);
+        // 清除该题之前的选择
+        document.querySelectorAll('.quiz-option[data-q="'+q+'"]').forEach(e => e.classList.remove('selected'));
+        this.classList.add('selected');
+        quizAnswers[q] = o;
+        document.getElementById('submitQuizBtn').classList.remove('hidden');
+      });
+    });
+    document.getElementById('submitQuizBtn')?.addEventListener('click', submitQuiz);
+  }
+
+  function submitQuiz() {
+    const unanswered = quizData.filter((_, i) => quizAnswers[i] === undefined);
+    if (unanswered.length > 0) {
+      alert('还有 ' + unanswered.length + ' 道题未作答，请完成所有题目再提交');
+      return;
+    }
+    let score = 0;
+    quizData.forEach((item, i) => {
+      const opts = document.querySelectorAll('.quiz-option[data-q="'+i+'"]');
+      if (quizAnswers[i] === item.answer) {
+        score++;
+        opts[quizAnswers[i]].classList.add('correct');
+      } else {
+        opts[quizAnswers[i]]?.classList.add('wrong');
+        opts[item.answer].classList.add('correct');
+      }
+    });
+    state.quizScore = score;
+    const resultEl = document.getElementById('quizResult');
+    resultEl.classList.remove('hidden');
+    resultEl.innerHTML = '<div class="card" style="text-align:center;">' +
+      '<h4>小测结果</h4>' +
+      '<span class="value">'+score+'</span> / '+quizData.length+' 题正确' +
+      '<p style="margin-top:0.5rem; color:#6c7a89; font-size:0.85rem;">'+(score===3?'优秀！供应链基础扎实。':score===2?'良好，继续加油。':'建议复习供应链基础知识。')+'</p></div>';
+    document.getElementById('submitQuizBtn').classList.add('hidden');
+    document.getElementById('nextAfterQuizBtn').classList.remove('hidden');
+    document.getElementById('nextAfterQuizBtn').addEventListener('click', () => {
+      completeStep(3); navigateToStep(4);
+    }, { once: true });
+  }
+
+  // ========== 事件绑定 ==========
+  function bindEvents(step) {
+    if (step === 2) {
+      document.getElementById('confirmStep2')?.addEventListener('click', () => {
+        completeStep(2); navigateToStep(3);
+      });
+    }
+    if (step === 4) {
+      document.querySelectorAll('[id$="_slider"]').forEach(sl => {
+        sl.addEventListener('input', function() {
+          const id = this.id.replace('_slider','');
+          const valEl = document.getElementById(id+'_val');
+          if (valEl) valEl.textContent = this.value;
+          state.demandForecast[id] = parseInt(this.value);
+          // 更新进度条
+          this.parentElement.querySelector('.progress-fill').style.width = (this.value/40000*100)+'%';
+          updateDemandChart();
+        });
+      });
+      document.getElementById('saveForecast')?.addEventListener('click', () => {
+        completeStep(4); notify('需求预测已保存');
+      });
+      document.getElementById('resetForecast')?.addEventListener('click', () => {
+        MASTER_DATA.salesPoints.forEach(p => {
+          state.demandForecast[p.id] = p.forecast;
+          const sl = document.getElementById(p.id+'_slider'); if(sl) sl.value = p.forecast;
+          const v = document.getElementById(p.id+'_val'); if(v) v.textContent = p.forecast;
+          sl.dispatchEvent(new Event('input'));
+        });
+        toast('已恢复默认预测值');
+      });
+      document.getElementById('aiForecast')?.addEventListener('click', () => {
+        MASTER_DATA.salesPoints.forEach(p => {
+          const avg = Math.round(p.history.reduce((a,b)=>a+b,0)/p.history.length);
+          state.demandForecast[p.id] = avg;
+          const sl = document.getElementById(p.id+'_slider'); if(sl) sl.value = avg;
+          const v = document.getElementById(p.id+'_val'); if(v) v.textContent = avg;
+          sl.dispatchEvent(new Event('input'));
+        });
+        toast('AI已按历史月均自动填充预测');
+      });
+    }
+    if (step === 5) {
+      document.querySelectorAll('[id$="_prod"]').forEach(inp => {
+        inp.addEventListener('input', function() {
+          const factory = this.id.replace('_prod','');
+          state.productionPlan[factory] = parseInt(this.value) || 0;
+          updateReplenishmentDisplay();
+        });
+      });
+      document.getElementById('autoProd')?.addEventListener('click', () => {
+        let totalDemand = Object.values(state.demandForecast).reduce((a,b)=>a+b,0);
+        let gzMax = 86520, szMax = 105060;
+        let totalCap = gzMax + szMax;
+        let gzShare = Math.min(gzMax, Math.round(totalDemand * gzMax / totalCap));
+        let szShare = Math.min(szMax, totalDemand - gzShare);
+        state.productionPlan['广州PACK厂'] = gzShare;
+        state.productionPlan['苏州PACK厂'] = szShare;
+        const gz = document.getElementById('广州PACK厂_prod'); if(gz) gz.value = gzShare;
+        const sz = document.getElementById('苏州PACK厂_prod'); if(sz) sz.value = szShare;
+        updateReplenishmentDisplay();
+        toast('已按产能比例自动分配生产计划');
+      });
+      document.getElementById('confirmProduction')?.addEventListener('click', () => {
+        completeStep(5); navigateToStep(6);
+      });
+      updateReplenishmentDisplay();
+    }
+    if (step === 6) {
+      document.querySelectorAll('[id^="mat_"]').forEach(inp => {
+        inp.addEventListener('input', function() {
+          const mat = this.id.replace('mat_','');
+          state.materialRequirements[mat] = parseFloat(this.value) || 0;
+        });
+      });
+      document.getElementById('confirmBOM')?.addEventListener('click', () => {
+        completeStep(6); navigateToStep(7);
+      });
+    }
+    if (step === 7) {
+      document.querySelectorAll('.supplier-card').forEach(card => {
+        card.addEventListener('click', function() {
+          const id = this.dataset.id;
+          if (state.selectedSuppliers[id]) {
+            delete state.selectedSuppliers[id]; this.classList.remove('selected');
+          } else {
+            state.selectedSuppliers[id] = true; this.classList.add('selected');
+          }
+          updateSelectedSuppliersDisplay();
+        });
+      });
+      document.getElementById('cheapestSuppliers')?.addEventListener('click', () => {
+        const byMaterial = {};
+        MASTER_DATA.suppliers.forEach(s => {
+          if (!byMaterial[s.material] || s.price < byMaterial[s.material].price) byMaterial[s.material] = s;
+        });
+        state.selectedSuppliers = {};
+        document.querySelectorAll('.supplier-card').forEach(c => c.classList.remove('selected'));
+        Object.values(byMaterial).forEach(s => {
+          state.selectedSuppliers[s.id] = true;
+          const card = document.querySelector('.supplier-card[data-id="'+s.id+'"]');
+          if (card) card.classList.add('selected');
+        });
+        updateSelectedSuppliersDisplay();
+        toast('已自动选中每种物料最低价供应商');
+      });
+      document.getElementById('confirmSuppliers')?.addEventListener('click', () => {
+        if (Object.keys(state.selectedSuppliers).length === 0) { alert('至少选择一家供应商'); return; }
+        completeStep(7); navigateToStep(8);
+      });
+    }
+    if (step === 8) {
+      document.querySelectorAll('.route-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+          if (e.target.tagName === 'INPUT') return;
+          const id = this.dataset.id;
+          if (state.selectedRoutes[id]) {
+            delete state.selectedRoutes[id]; this.classList.remove('selected');
+          } else {
+            state.selectedRoutes[id] = true; this.classList.add('selected');
+          }
+          initRouteMap();
+        });
+      });
+      document.querySelectorAll('.route-qty').forEach(inp => {
+        inp.addEventListener('input', function() {
+          state.routeQuantities[this.dataset.route] = parseInt(this.value) || 0;
+        });
+        inp.addEventListener('click', e => e.stopPropagation());
+      });
+      document.querySelectorAll('.route-days').forEach(inp => {
+        inp.addEventListener('input', function() {
+          state.routeDays[this.dataset.route] = parseInt(this.value) || 1;
+          // 更新到达日期
+          let today = new Date();
+          let arrive = new Date(today);
+          arrive.setDate(arrive.getDate() + (parseInt(this.value) || 1));
+          let arriveStr = (arrive.getMonth()+1)+'月'+arrive.getDate()+'日';
+          let item = this.closest('.route-item');
+          if (item) {
+            let el = item.querySelector('.arrive-date');
+            if (el) el.textContent = arriveStr;
+          }
+        });
+        inp.addEventListener('click', e => e.stopPropagation());
+      });
+      document.getElementById('aiLogistics')?.addEventListener('click', () => {
+        state.selectedRoutes = {}; state.routeQuantities = {}; state.routeDays = {};
+        document.querySelectorAll('.route-item').forEach(c => c.classList.remove('selected'));
+        const totalProd = Object.values(state.productionPlan).reduce((a,b)=>a+b,0);
+        MASTER_DATA.routes.forEach(r => {
+          // 日本总代选海运（便宜），国内选汽运（快）
+          const isJapan = r.to.includes('日本');
+          const bestDays = isJapan ? Math.max(...MASTER_DATA.routes.filter(x=>x.to===r.to && x.mode==='海运').map(x=>x.days)) : Math.min(...MASTER_DATA.routes.filter(x=>x.to===r.to && x.mode==='汽运').map(x=>x.days));
+          // 每个目的地选一条最优路线
+          const bestRoute = MASTER_DATA.routes
+            .filter(x => x.to === r.to)
+            .sort((a,b) => isJapan ? (a.mode==='海运'?-1:1) - (b.mode==='海运'?-1:1) : (a.mode==='汽运'?-1:1) - (b.mode==='汽运'?-1:1))[0];
+          if (r.id === bestRoute.id) {
+            state.selectedRoutes[r.id] = true;
+            state.routeQuantities[r.id] = Math.round(totalProd / MASTER_DATA.routes.filter(x=>x.to===r.to).length);
+            state.routeDays[r.id] = r.days;
+            const card = document.querySelector('.route-item[data-id="'+r.id+'"]');
+            if (card) { card.classList.add('selected');
+              const qtyInput = card.querySelector('.route-qty'); if(qtyInput) qtyInput.value = state.routeQuantities[r.id];
+              const daysInput = card.querySelector('.route-days'); if(daysInput) daysInput.value = r.days;
+            }
+          }
+        });
+        initRouteMap();
+        toast('AI已自动规划最优物流路线：国内汽运+跨境海运');
+      });
+      document.getElementById('confirmRoutes')?.addEventListener('click', () => {
+        if (Object.keys(state.selectedRoutes).length === 0) { alert('至少选择一条路线'); return; }
+        completeStep(8); navigateToStep(9);
+      });
+    }
+    if (step === 9) {
+      ['lithium','shipping','yield','recycle'].forEach(id => {
+        document.getElementById(id+'Slider')?.addEventListener('input', updateTwinMetrics);
+      });
+      document.getElementById('runFullSim')?.addEventListener('click', runSimulation);
+      document.getElementById('viewResults')?.addEventListener('click', () => navigateToStep(10));
+    }
+    if (step === 10) {
+      document.getElementById('goToReview')?.addEventListener('click', () => {
+        completeStep(10); navigateToStep(11);
+      });
+      document.getElementById('downloadExcelBtn')?.addEventListener('click', downloadExcel);
+      const searchBtn = document.getElementById('historySearchBtn');
+      if (searchBtn) searchBtn.addEventListener('click', renderHistorySearch);
+    }
+    if (step === 11) {
+      document.getElementById('saveReview')?.addEventListener('click', () => {
+        completeStep(11); notify('复盘笔记已保存！实验完成。');
+      });
+      document.getElementById('resetExperiment')?.addEventListener('click', resetExperiment);
+      document.getElementById('downloadLedgerBtn')?.addEventListener('click', downloadExcel);
+      document.getElementById('refreshLedgerBtn')?.addEventListener('click', async () => {
+        await pullStats();
+        renderLedger();
+        notify('台账已刷新');
+      });
+      // 渲染优化建议
+      renderSuggestions();
+    }
+  }
+
+  // ========== 辅助函数 ==========
+  function updateReplenishmentDisplay() {
+    const display = document.getElementById('replenishmentDisplay');
+    if (!display) return;
+    const totalProd = Object.values(state.productionPlan).reduce((a,b)=>a+b,0);
+    const totalDemand = Object.values(state.demandForecast).reduce((a,b)=>a+b,0);
+    let html = '<table><tr><th>销售网点</th><th>预测需求</th><th>建议补货量</th></tr>';
+    MASTER_DATA.salesPoints.forEach(p => {
+      const ratio = totalDemand > 0 ? state.demandForecast[p.id]/totalDemand : 0;
+      html += '<tr><td>'+p.id+'</td><td>'+state.demandForecast[p.id]+'套</td><td><strong style="color:#00ff88;">'+Math.round(totalProd*ratio)+'套</strong></td></tr>';
+    });
+    html += '</table>';
+    display.innerHTML = html;
+  }
+
+  function updateSelectedSuppliersDisplay() {
+    const display = document.getElementById('selectedSuppliersDisplay');
+    if (!display) return;
+    const sel = Object.keys(state.selectedSuppliers);
+    if (!sel.length) { display.innerHTML = '<p style="color:#667;">尚未选择</p>'; return; }
+    display.innerHTML = sel.map(id => {
+      const s = MASTER_DATA.suppliers.find(sp => sp.id === id);
+      return '<span class="tag green">'+s.id+'</span>';
+    }).join(' ');
+  }
+
+  function renderSuggestions() {
+    const el = document.getElementById('suggestionList');
+    if (!el) return;
+    let s = [];
+    if (state.simulationResult) {
+      if (parseFloat(state.simulationResult.fillRate) < 95) s.push('市场满足率偏低，建议增加产量或优化物流路线。');
+      if (parseFloat(state.simulationResult.deviation) > 10) s.push('预测偏差较大，建议参考历史月均数据调整预测。');
+      if (parseFloat(state.simulationResult.unitProcCost) > 4) s.push('采购成本偏高，考虑选择单价更低的供应商。');
+    }
+    if (state.quizScore < 3) s.push('知识小测有错题，建议复习BOM结构和运输方式特点。');
+    if (Object.keys(state.selectedSuppliers).length < 4) s.push('供应商选择较少，分散供应商可降低断供风险。');
+    if (s.length === 0) s.push('各项指标表现良好，可尝试微调参数挑战更高分。');
+    el.innerHTML = s.map(t => '<li style="margin:0.3rem 0; color:#5a6c7d;">'+t+'</li>').join('');
+  }
+
+  // ========== 图表函数 ==========
+  // echarts CDN 不可达时的降级提示（离线/内网/cdn被墙场景）
+  function chartGuard(dom, label) {
+    if (typeof echarts === 'undefined' || !echarts || !echarts.init) {
+      if (dom) {
+        dom.innerHTML = '<div style="height:100%; display:flex; align-items:center; justify-content:center; ' +
+          'color:#8a97a6; font-size:0.85rem; text-align:center; padding:1rem; line-height:1.8;">' +
+          '[' + label + '] 图表组件未加载（echarts CDN 不可达）<br>' +
+          '<span style="font-size:0.75rem;">平台其余功能与数据不受影响，可继续完成实验</span></div>';
+      }
+      return null;
+    }
+    return true;
+  }
+
+  function updateDemandChart() {
+    const dom = document.getElementById('demandChart');
+    if (!dom) return;
+    if (!chartGuard(dom, '需求预测对比图')) return;
+    const chart = echarts.getInstanceByDom(dom) || echarts.init(dom);
+    chart.setOption({
+      backgroundColor: 'transparent',
+      title: { text: '需求预测 vs 历史月均', left: 'center', textStyle: { color: '#5a6c7d', fontSize: 13 } },
+      legend: { data: ['历史月均', '本次预测'], bottom: 0, textStyle: { color: '#6c7a89' } },
+      xAxis: { data: MASTER_DATA.salesPoints.map(p => p.id), axisLabel: { color: '#ccc' } },
+      yAxis: { axisLabel: { color: '#ccc' } },
+      series: [
+        { name: '历史月均', data: MASTER_DATA.salesPoints.map(p => Math.round(p.history.reduce((a,b)=>a+b,0)/6)), type: 'bar', color: '#446688', itemStyle: { borderRadius: [4,4,0,0] } },
+        { name: '本次预测', data: MASTER_DATA.salesPoints.map(p => state.demandForecast[p.id]), type: 'bar', color: '#00d2ff', itemStyle: { borderRadius: [4,4,0,0] } }
+      ]
+    });
+  }
+  function initDemandChart() { updateDemandChart(); }
+
+  function initRouteMap() {
+    const dom = document.getElementById('routeMap');
+    if (!dom) return;
+    if (!chartGuard(dom, '物流路线网络图')) return;
+    const chart = echarts.init(dom);
+    const nodes = [], links = [], nodeMap = {};
+    MASTER_DATA.routes.forEach(r => {
+      if (!nodeMap[r.from]) { nodeMap[r.from] = true; nodes.push({ name: r.from, x: Math.random()*600, y: Math.random()*250 }); }
+      if (!nodeMap[r.to]) { nodeMap[r.to] = true; nodes.push({ name: r.to, x: Math.random()*600, y: Math.random()*250 }); }
+    });
+    MASTER_DATA.routes.forEach(r => {
+      const fromIdx = nodes.findIndex(n => n.name === r.from);
+      const toIdx = nodes.findIndex(n => n.name === r.to);
+      const sel = state.selectedRoutes[r.id];
+      links.push({
+        source: fromIdx, target: toIdx,
+        label: { show: true, formatter: r.dist+'km', color: '#aaa', fontSize: 9 },
+        lineStyle: { color: sel ? '#00ff88' : '#00d2ff', width: sel ? 3 : 1.5, curveness: 0.2 }
+      });
+    });
+    chart.setOption({
+      backgroundColor: 'transparent',
+      title: { text: '物流路线网络图', left: 'center', textStyle: { color: '#2c3e50', fontSize: 14, fontWeight: 'bold' } },
+      series: [{
+        type: 'graph', layout: 'force', roam: true, data: nodes, links,
+        force: { repulsion: 500, edgeLength: [150, 300] },
+        label: { show: true, color: '#ccc', fontSize: 10 },
+        itemStyle: { color: '#00ff88' },
+        emphasis: { focus: 'adjacency' }
+      }]
+    });
+  }
+
+  function updateTwinMetrics() {
+    const li = parseInt(document.getElementById('lithiumSlider')?.value) || 100;
+    const sh = parseInt(document.getElementById('shippingSlider')?.value) || 25;
+    const yi = parseInt(document.getElementById('yieldSlider')?.value) || 92;
+    const re = parseInt(document.getElementById('recycleSlider')?.value) || 35;
+    document.getElementById('lithiumVal').textContent = li;
+    document.getElementById('shippingVal').textContent = sh;
+    document.getElementById('yieldVal').textContent = yi;
+    document.getElementById('recycleVal').textContent = re;
+    const cost = (90*(li/100)*(1+(sh-15)/100) - 5*((yi-80)/19) - 8*(re/70)).toFixed(1);
+    const carbon = (80 + (sh-15)*0.5 - re*0.4).toFixed(1);
+    const days = (45 + (sh-15) - (yi-80)*0.3).toFixed(1);
+    document.getElementById('twinCost').textContent = cost;
+    document.getElementById('twinCarbon').textContent = carbon;
+    document.getElementById('twinDays').textContent = days;
+  }
+
+  function initTwinDashboard() {
+    const dom = document.getElementById('twinChart');
+    if (!dom) return;
+    if (!chartGuard(dom, '供应链绩效雷达图')) return;
+    const chart = echarts.init(dom);
+    chart.setOption({
+      backgroundColor: 'transparent',
+      title: { text: '供应链绩效雷达', left: 'center', textStyle: { color: '#ccc', fontSize: 13 } },
+      radar: {
+        indicator: [
+          { name: '采购效率', max: 100 }, { name: '生产效率', max: 100 },
+          { name: '物流效率', max: 100 }, { name: '销售达成', max: 100 },
+          { name: '回收利用', max: 100 }
+        ],
+        axisName: { color: '#ccc' }
+      },
+      series: [{
+        type: 'radar',
+        data: [{
+          value: [85, 92, 78, 88, 65], name: '当前方案',
+          areaStyle: { color: 'rgba(0,255,136,0.2)' },
+          lineStyle: { color: '#00ff88' }
+        }]
+      }]
+    });
+  }
+
+  function initReviewFlowChart() {
+    const dom = document.getElementById('reviewFlowChart');
+    if (!dom) return;
+    if (!chartGuard(dom, '供应链端到端流动图')) return;
+    const totalDemand = Object.values(state.demandForecast).reduce((a,b)=>a+b,0);
+    const totalProd = Object.values(state.productionPlan).reduce((a,b)=>a+b,0);
+    const supCnt = Object.keys(state.selectedSuppliers).length;
+    const routeCnt = Object.keys(state.selectedRoutes).length;
+    const transQty = Object.values(state.routeQuantities).reduce((a,b)=>a+(parseInt(b)||0),0);
+    const chart = echarts.init(dom);
+    const data = [
+      { name: '供应商('+supCnt+'家)' },
+      { name: '原料入库' },
+      { name: '工厂生产('+totalProd.toLocaleString()+')' },
+      { name: '物流运输('+routeCnt+'条)' },
+      { name: '销售网点' }
+    ];
+    const links = [
+      { source: data[0].name, target: data[1].name, value: 100 },
+      { source: data[1].name, target: data[2].name, value: totalProd || 1 },
+      { source: data[2].name, target: data[3].name, value: transQty || totalProd || 1 },
+      { source: data[3].name, target: data[4].name, value: transQty || totalProd || 1 }
+    ];
+    chart.setOption({
+      backgroundColor: 'transparent',
+      title: { text: '供应链端到端流动图', left: 'center', textStyle: { color: '#2c3e50', fontSize: 14, fontWeight: 'bold' } },
+      tooltip: { trigger: 'item' },
+      series: [{
+        type: 'sankey', layout: 'none', emphasis: { focus: 'adjacency' },
+        nodeAlign: 'left', data: data, links: links,
+        label: { color: '#2c3e50', fontSize: 12, fontWeight: 600 },
+        lineStyle: { color: 'gradient', curveness: 0.5, opacity: 0.65, width: 3 },
+        levels: [
+          { depth: 0, itemStyle: { color: '#ffaa44' } },
+          { depth: 1, itemStyle: { color: '#0099cc' } },
+          { depth: 2, itemStyle: { color: '#00ff88' } },
+          { depth: 3, itemStyle: { color: '#ff6688' } },
+          { depth: 4, itemStyle: { color: '#aa88ff' } }
+        ]
+      }]
+    });
+  }
+
+  // ========== 3D供应链节点地图（增强版，可点击） ==========
+  function initSupplierMap3D() {
+    const container = document.getElementById('supplierMap3d');
+    if (!container) return;
+    while (container.firstChild) container.removeChild(container.firstChild);
+    if (typeof THREE === 'undefined' || !THREE) {
+      container.innerHTML = '<div style="height:100%; display:flex; align-items:center; justify-content:center; ' +
+        'color:#8a97a6; font-size:0.85rem; text-align:center; padding:1rem; line-height:1.8;">' +
+        '[3D供应链节点地图] 3D组件未加载（three.js CDN 不可达）<br>' +
+        '<span style="font-size:0.75rem;">孪生参数调节、60天模拟与成绩评定功能不受影响</span></div>';
+      return;
+    }
+    const label = document.createElement('div');
+    label.className = 'map-label';
+    label.innerHTML = '<i class="fas fa-map-marker-alt"></i> 3D供应链节点地图（拖拽旋转 · 点击节点查看详情）';
+    container.appendChild(label);
+
+    const width = container.clientWidth || 600;
+    const height = container.clientHeight || 300;
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x060f22);
+    const camera = new THREE.PerspectiveCamera(50, width/height, 0.1, 100);
+    camera.position.set(6, 5, 10);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(width, height);
+    renderer.shadowMap.enabled = true;
+    container.appendChild(renderer.domElement);
+
+    scene.add(new THREE.AmbientLight(0x404060, 0.8));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    dirLight.position.set(5, 10, 7);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+    const blueLight = new THREE.PointLight(0x00d2ff, 0.6, 20);
+    blueLight.position.set(-5, 3, -5);
+    scene.add(blueLight);
+
+    const grid = new THREE.GridHelper(12, 16, 0x00d2ff, 0x1a3a5a);
+    grid.position.y = -1.5;
+    scene.add(grid);
+
+    const nodes = [
+      { name: '石家庄电芯厂', type: 'supplier', pos: [-3, 0.5, 2], desc: '电芯供应商，日产能2828组，单价96元' },
+      { name: '宝鸡电芯厂', type: 'supplier', pos: [-3.5, -0.3, -1], desc: '电芯供应商，单价85元/组，性价比高' },
+      { name: '四川电解液厂', type: 'supplier', pos: [-1, -0.8, -3], desc: '电解液供应商，日产能294桶，单价400元' },
+      { name: '贵阳电解液厂', type: 'supplier', pos: [0.5, 0, -2.5], desc: '电解液供应商，单价430元/桶' },
+      { name: '常州壳体厂', type: 'supplier', pos: [3, 0.3, -0.5], desc: '壳体供应商，日产能1920个' },
+      { name: '东莞壳体厂', type: 'supplier', pos: [2.5, -0.5, 2.5], desc: '壳体供应商，单价26元/个，价格最优' },
+      { name: '广州PACK厂', type: 'factory', pos: [-0.5, 1, 0.5], desc: '华南PACK厂，日产能1442套，60天最大86520套' },
+      { name: '苏州PACK厂', type: 'factory', pos: [1.5, 0.8, -0.5], desc: '华东PACK厂，日产能1751套，60天最大105060套' },
+      { name: '华北总代', type: 'sales', pos: [-2.5, 0, 4], desc: '华北销售网点（供应华北汽车主机厂+植保无人机客户），月均约24000套，人民币结算' },
+      { name: '华中总代', type: 'sales', pos: [0, -0.3, 4.5], desc: '华中销售网点（供应华中新能源汽车基地+巡检无人机客户），月均约28000套，需求量最大' },
+      { name: '日本总代', type: 'sales', pos: [4.5, 0.5, -2], desc: '跨境销售网点，日元结算，需海运运输' },
+      { name: '西北总代', type: 'sales', pos: [-4, -0.2, -3], desc: '西北销售网点（供应西北低空经济无人机集群+特种车辆），月均约15500套' }
+    ];
+
+    const colorMap = { supplier: 0xffaa44, factory: 0x00ff88, sales: 0x44aaff };
+    const meshes = [];
+
+    nodes.forEach((n) => {
+      const color = colorMap[n.type];
+      const size = n.type === 'factory' ? 0.5 : n.type === 'supplier' ? 0.38 : 0.32;
+      const geo = new THREE.SphereGeometry(size, 24, 24);
+      const mat = new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: 0.4, roughness: 0.3, metalness: 0.6 });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(n.pos[0], n.pos[1], n.pos[2]);
+      mesh.castShadow = true;
+      mesh.userData = n;
+      scene.add(mesh);
+      meshes.push(mesh);
+
+      const ringGeo = new THREE.RingGeometry(size*1.3, size*1.6, 20);
+      const ringMat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.25, side: THREE.DoubleSide });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = -Math.PI/2;
+      ring.position.set(n.pos[0], n.pos[1]-size-0.05, n.pos[2]);
+      scene.add(ring);
+
+      // 文字标签
+      const canvas = document.createElement('canvas');
+      canvas.width = 256; canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'rgba(0,20,40,0.7)';
+      ctx.fillRect(0, 0, 256, 64);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '20px Microsoft YaHei';
+      ctx.textAlign = 'center';
+      ctx.fillText(n.name, 128, 40);
+      const texture = new THREE.CanvasTexture(canvas);
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true }));
+      sprite.position.set(n.pos[0], n.pos[1]+size+0.5, n.pos[2]);
+      sprite.scale.set(1.8, 0.45, 1);
+      scene.add(sprite);
+    });
+
+    // 连接线路
+    const connections = [
+      ['石家庄电芯厂', '广州PACK厂'], ['石家庄电芯厂', '苏州PACK厂'],
+      ['宝鸡电芯厂', '广州PACK厂'], ['宝鸡电芯厂', '苏州PACK厂'],
+      ['四川电解液厂', '广州PACK厂'], ['四川电解液厂', '苏州PACK厂'],
+      ['贵阳电解液厂', '广州PACK厂'], ['贵阳电解液厂', '苏州PACK厂'],
+      ['常州壳体厂', '苏州PACK厂'], ['东莞壳体厂', '广州PACK厂'],
+      ['广州PACK厂', '华北总代'], ['广州PACK厂', '华中总代'],
+      ['广州PACK厂', '日本总代'], ['广州PACK厂', '西北总代'],
+      ['苏州PACK厂', '华北总代'], ['苏州PACK厂', '华中总代'],
+      ['苏州PACK厂', '日本总代'], ['苏州PACK厂', '西北总代']
+    ];
+    connections.forEach(([from, to]) => {
+      const fromNode = nodes.find(n => n.name === from);
+      const toNode = nodes.find(n => n.name === to);
+      if (!fromNode || !toNode) return;
+      const points = [
+        new THREE.Vector3(fromNode.pos[0], fromNode.pos[1], fromNode.pos[2]),
+        new THREE.Vector3(toNode.pos[0], toNode.pos[1], toNode.pos[2])
+      ];
+      const geo = new THREE.BufferGeometry().setFromPoints(points);
+      scene.add(new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0x00d2ff, transparent: true, opacity: 0.2 })));
+    });
+
+    // OrbitControls 不可达时降级：不启用阻尼与自动旋转，地图仍可交互
+    const controls = (typeof THREE.OrbitControls === 'function')
+      ? new THREE.OrbitControls(camera, renderer.domElement)
+      : null;
+    if (controls) {
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.5;
+    controls.target.set(0, 0.3, 0);
+    controls.enableZoom = true;
+    controls.minDistance = 5;
+    controls.maxDistance = 20;
+    }
+
+    // 点击节点显示信息
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    let popup = null;
+    renderer.domElement.addEventListener('click', (e) => {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(meshes);
+      if (intersects.length > 0) {
+        const n = intersects[0].object.userData;
+        if (!popup) {
+          popup = document.createElement('div');
+          popup.className = 'node-info-popup';
+          container.appendChild(popup);
+        }
+        popup.style.display = 'block';
+        popup.style.left = (e.clientX - rect.left + 10) + 'px';
+        popup.style.top = (e.clientY - rect.top + 10) + 'px';
+        popup.innerHTML = '<h5>'+n.name+'</h5><p>'+n.desc+'</p><p style="margin-top:0.3rem; color:#00d2ff; font-size:0.7rem;">类型：'+n.type+'</p>';
+      } else {
+        if (popup) popup.style.display = 'none';
+      }
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+      if (controls && typeof controls.update === 'function') controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    const resize = () => {
+      const w = container.clientWidth, h = container.clientHeight;
+      if (w > 0 && h > 0) { camera.aspect = w/h; camera.updateProjectionMatrix(); renderer.setSize(w, h); }
+    };
+    window.addEventListener('resize', resize);
+    new ResizeObserver(resize).observe(container);
+  }
+
+  // ========== 模拟运行 ==========
+  function runSimulation() {
+    eventResults = [];
+    let ei = 0;
+    function nextEvent() {
+      if (ei < RISK_EVENTS.length) {
+        const ev = RISK_EVENTS[ei++];
+        toast('Day '+ev.day+'：'+ev.title, 'warn');
+        showEventModal(ev, (choice) => {
+          eventResults.push({day: ev.day, title: ev.title, choice: choice.text});
+          nextEvent();
+        });
+      } else {
+        finishSimulation();
+      }
+    }
+    nextEvent();
+  }
+
+  function finishSimulation() {
+    const totalDemand = Object.values(state.demandForecast).reduce((a,b)=>a+b,0);
+    const totalProd = Object.values(state.productionPlan).reduce((a,b)=>a+b,0);
+    const fillRate = Math.min(100, (totalProd/totalDemand)*100).toFixed(1);
+    const maxProd = MASTER_DATA.factories.production.reduce((a,f)=>a+f.total,0);
+    const prodRate = Math.min(100, (totalProd/maxProd)*100).toFixed(1);
+    let totalDev = 0;
+    MASTER_DATA.salesPoints.forEach(p => {
+      const actual = p.history.reduce((a,b)=>a+b,0)/6;
+      totalDev += Math.abs((state.demandForecast[p.id] - actual)/actual);
+    });
+    const deviationRate = ((totalDev/MASTER_DATA.salesPoints.length)*100).toFixed(1);
+
+    state.simulationResult = {
+      unitProcCost: (3.2 + Math.random()*1.6).toFixed(2),
+      unitLogCost: (1.0 + Math.random()*1.2).toFixed(2),
+      fillRate: fillRate, prodRate: prodRate, deviation: deviationRate,
+      procScore: Math.floor(18 + Math.random()*7),
+      logScore: Math.floor(18 + Math.random()*7),
+      fillScore: Math.floor(14 + Math.random()*6),
+      prodScore: Math.floor(10 + Math.random()*5),
+      devScore: Math.floor(10 + Math.random()*5),
+      totalScore: 0,
+      events: eventResults
+    };
+    state.simulationResult.totalScore = state.simulationResult.procScore + state.simulationResult.logScore +
+      state.simulationResult.fillScore + state.simulationResult.prodScore + state.simulationResult.devScore;
+    state.simulationRun = true;
+    completeStep(9);
+    const username = document.getElementById('username')?.value || 'HFAdmin';
+    addScoreRecord(username, state.simulationResult.totalScore);
+    if (state.simulationResult.totalScore >= 90) fireConfetti();
+    toast('60天模拟完成，总分 '+state.simulationResult.totalScore, state.simulationResult.totalScore>=90?'ok':'warn');
+
+    const el = document.getElementById('simResultText');
+    if (el) {
+      el.classList.remove('hidden');
+      let eventsHtml = '';
+      if (eventResults.length) {
+        eventsHtml = '<div style="margin-top:0.8rem; padding-top:0.8rem; border-top:1px solid #e0e8f0;">' +
+          '<h5 style="color:#e67e22; margin-bottom:0.4rem;"><i class="fas fa-list-ul"></i> 风险事件应对记录</h5>' +
+          eventResults.map(e => '<p style="font-size:0.82rem; color:#5a6c7d;">Day'+e.day+' '+e.title+' → '+e.choice+'</p>').join('') +
+          '</div>';
+      }
+      el.innerHTML = '<div class="card flow-line"><h4 style="color:#27ae60;"><i class="fas fa-check-circle"></i> 60天动态模拟完成</h4>' +
+        '<p style="margin-top:0.5rem;">市场满足率：<strong>'+fillRate+'%</strong> | 生产满足率：<strong>'+prodRate+'%</strong> | 预测偏差：<strong>'+deviationRate+'%</strong></p>' +
+        eventsHtml + '</div>';
+    }
+    document.getElementById('viewResults')?.classList.remove('hidden');
+    notify('60天动态模拟完成！成绩已记录。');
+  }
+
+  function resetExperiment() {
+    state.currentStep = 1;
+    state.completedSteps = new Set([1]);
+    state.demandForecast = { "华北总代":24000, "华中总代":28000, "日本总代":16500, "西北总代":15500 };
+    state.productionPlan = { "广州PACK厂":86520, "苏州PACK厂":105060 };
+    state.materialRequirements = { "电芯":0, "电解液":0, "壳体":0 };
+    state.selectedSuppliers = {}; state.selectedRoutes = {}; state.routeQuantities = {}; state.routeDays = {};
+    state.simulationRun = false; state.simulationResult = null; state.quizScore = 0;
+    updateStepUI(); navigateToStep(1);
+    notify('实验已重置，可重新开始');
+  }
+
+  // ========== 成绩记录 ==========
+  function renderScoreRoll() {
+    const container = document.getElementById('scoreRollContainer');
+    if (!container) return;
+    if (scoreRoll.length === 0) { container.innerHTML = '<div style="color:#666; text-align:center; padding:0.5rem;">暂无成绩记录</div>'; return; }
+    container.innerHTML = scoreRoll.slice(0, LEDGER_ROWS).map(item =>
+      '<div class="score-roll-item"><span class="user"><i class="fas fa-user"></i> '+item.user+'</span>' +
+      '<span class="score">'+item.score+'分</span>' +
+      '<span style="color:#667; font-size:0.7rem;">'+(item.time ? new Date(item.time).toLocaleString() : '')+'</span></div>'
+    ).join('');
+  }
+
+  // 最后一步台账表：Excel 风格表格，展示最新 LEDGER_ROWS 条实验记录
+  function renderLedger() {
+    const table = document.getElementById('ledgerTable');
+    if (!table) return;
+    const rows = scoreRoll.slice(0, LEDGER_ROWS);
+    let html = '<thead><tr>' +
+      '<th class="cell-idx">#</th><th>用户名</th><th class="cell-score">总分</th>' +
+      '<th>采购成本<br><span class="sub">/25</span></th>' +
+      '<th>物流成本<br><span class="sub">/25</span></th>' +
+      '<th>市场满足<br><span class="sub">/20</span></th>' +
+      '<th>生产满足<br><span class="sub">/15</span></th>' +
+      '<th>预测偏差<br><span class="sub">/15</span></th>' +
+      '<th>完成时间</th></tr></thead><tbody>';
+    if (!rows.length) {
+      html += '<tr><td colspan="9" class="cell-empty">暂无实验记录，完成步骤9动态模拟后自动写入本台账</td></tr>';
+    } else {
+      rows.forEach((r, i) => {
+        const cell = v => (v === undefined || v === null || v === '') ? '-' : v;
+        html += '<tr>' +
+          '<td class="cell-idx">' + (i + 1) + '</td>' +
+          '<td class="cell-user">' + (r.user || 'HFAdmin') + '</td>' +
+          '<td class="cell-score">' + cell(r.score) + '</td>' +
+          '<td>' + cell(r.proc) + '</td>' +
+          '<td>' + cell(r.log) + '</td>' +
+          '<td>' + cell(r.fill) + '</td>' +
+          '<td>' + cell(r.prod) + '</td>' +
+          '<td>' + cell(r.dev) + '</td>' +
+          '<td class="cell-time">' + fmtTime(r.time) + '</td>' +
+        '</tr>';
+      });
+    }
+    html += '</tbody>';
+    table.innerHTML = html;
+  }
+
+  function addScoreRecord(username, score) {
+    const r = state.simulationResult || {};
+    scoreRoll.unshift({
+      user: username || 'HFAdmin',
+      score: (typeof score === 'number') ? score : (r.totalScore || 0),
+      time: Date.now(),
+      proc: r.procScore, log: r.logScore, fill: r.fillScore, prod: r.prodScore, dev: r.devScore,
+      fillRate: r.fillRate, deviation: r.deviation, events: (r.events || []).length
+    });
+    if (scoreRoll.length > RECORD_KEEP) scoreRoll = scoreRoll.slice(0, RECORD_KEEP);
+    saveLocal();
+    renderScoreRoll();
+    renderLedger();
+    pushStats();
+  }
+
+  function renderHistorySearch() {
+    const input = document.getElementById('historySearchInput');
+    const resultDiv = document.getElementById('historyResult');
+    if (!input || !resultDiv) return;
+    const keyword = input.value.trim().toLowerCase();
+    if (!keyword) { resultDiv.innerHTML = '<span style="color:#888;">请输入用户名查询</span>'; return; }
+    const filtered = scoreRoll.filter(item => item.user.toLowerCase().includes(keyword));
+    if (filtered.length === 0) { resultDiv.innerHTML = '<span style="color:#ff8866;">未找到相关记录</span>'; return; }
+    resultDiv.innerHTML = '<div class="score-roll" style="max-height:150px;">' +
+      filtered.slice(0, 20).map(item =>
+        '<div class="score-roll-item"><span class="user">'+item.user+'</span><span class="score">'+item.score+'分</span></div>'
+      ).join('') + '</div>';
+  }
+
+  function downloadExcel() {
+    const rows = scoreRoll.slice(0, LEDGER_ROWS);
+    if (rows.length === 0) { alert('暂无成绩数据'); return; }
+    const data = rows.map((item, idx) => ({
+      '序号': idx + 1, '用户名': item.user, '总分': item.score,
+      '采购成本得分': item.proc, '物流成本得分': item.log,
+      '市场满足得分': item.fill, '生产满足得分': item.prod, '预测偏差得分': item.dev,
+      '市场满足率': item.fillRate !== undefined ? item.fillRate + '%' : '-',
+      '预测偏差率': item.deviation !== undefined ? item.deviation + '%' : '-',
+      '风险事件应对数': item.events !== undefined ? item.events : '-',
+      '完成时间': fmtTime(item.time)
+    }));
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data);
+    ws['!cols'] = [{ wch: 6 }, { wch: 14 }, { wch: 8 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 20 }];
+    XLSX.utils.book_append_sheet(wb, ws, '实验成绩台账');
+
+    const stat = [
+      { '指标': '累计参与实验(人次)', '数值': participantTotal() },
+      { '指标': '基线人数', '数值': PARTICIPANT_BASE },
+      { '指标': '后期登录次数', '数值': totalLogins },
+      { '指标': '每次登录登记倍数', '数值': LOGIN_INCREMENT },
+      { '指标': '台账展示条数', '数值': LEDGER_ROWS },
+      { '指标': '累计成绩记录数', '数值': scoreRoll.length },
+      { '指标': '服务端同步状态', '数值': apiOnline ? '已启用(跨浏览器累计)' : '未启用(仅本地浏览器存储)' },
+      { '指标': '导出时间', '数值': fmtTime(Date.now()) }
+    ];
+    const ws2 = XLSX.utils.json_to_sheet(stat);
+    ws2['!cols'] = [{ wch: 24 }, { wch: 32 }];
+    XLSX.utils.book_append_sheet(wb, ws2, '平台统计');
+
+    XLSX.writeFile(wb, 'HF锂离子蓄电池_实验成绩台账.xlsx');
+    notify('成绩台账Excel导出成功（' + rows.length + '条）！');
+  }
+
+  window._nav = navigateToStep;
+  window.selectBid = function(el, idx) {
+    state.bidStrategy = idx;
+    document.querySelectorAll('[onclick^="selectBid"]').forEach(c => { c.style.borderColor = ''; c.style.background=''; });
+    el.style.borderColor = '#2980d9'; el.style.background = '#eef4fb';
+    toast('已选择' + ['保守','均衡','激进'][idx] + '投标策略');
+  };
+  window.selectLoan = function(el, days) {
+    state.loanChoice = days;
+    document.querySelectorAll('[onclick^="selectLoan"]').forEach(c => { c.style.borderColor=''; c.style.background=''; });
+    el.style.borderColor='#2980d9'; el.style.background='#eef4fb';
+    toast('已选择' + days + '天期贷款');
+  };
+  window.toggleUpgrade = function(el) {
+    state.factoryUpgrade = !state.factoryUpgrade;
+    el.style.borderColor = state.factoryUpgrade ? '#2980d9' : '';
+    el.style.background = state.factoryUpgrade ? '#eef4fb' : '';
+    toast(state.factoryUpgrade ? '已选择扩建苏州工厂（产能+20%，投资800万）' : '已取消工厂扩建');
+  };
+  updateStepUI();
+
+  // ========== 全局3D背景（供应链主题：工厂+集装箱+物流节点） ==========
+  (function initGlobal3D() {
+    const container = document.getElementById('three-container');
+    if (!container) return;
+    if (typeof THREE === 'undefined' || !THREE) {
+      container.style.background = 'linear-gradient(160deg,#060f22,#0a1a33 60%,#0d2440)';
+      return;
+    }
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x060a14);
+    scene.fog = new THREE.Fog(0x060a14, 15, 40);
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 0.1, 100);
+    camera.position.set(0, 4, 14);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    container.appendChild(renderer.domElement);
+
+    scene.add(new THREE.AmbientLight(0x304060, 0.6));
+    const mainLight = new THREE.DirectionalLight(0x88bbff, 0.8);
+    mainLight.position.set(5, 10, 5);
+    scene.add(mainLight);
+    const accentLight = new THREE.PointLight(0x00d2ff, 0.5, 30);
+    accentLight.position.set(-5, 3, -5);
+    scene.add(accentLight);
+
+    // 地面
+    const groundGeo = new THREE.PlaneGeometry(60, 60);
+    const groundMat = new THREE.MeshStandardMaterial({ color: 0x0a1525, roughness: 0.9 });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI/2;
+    ground.position.y = -2;
+    scene.add(ground);
+
+    // 仓库建筑（简化盒体）
+    const warehouseGeo = new THREE.BoxGeometry(3, 1.5, 2);
+    const warehouseMat = new THREE.MeshStandardMaterial({ color: 0x1a3a5a, roughness: 0.7, metalness: 0.3 });
+    const warehouses = [
+      [-6, -1.2, -3], [6, -1.2, -2], [-4, -1.2, 4], [5, -1.2, 5]
+    ];
+    warehouses.forEach(pos => {
+      const w = new THREE.Mesh(warehouseGeo, warehouseMat);
+      w.position.set(pos[0], pos[1], pos[2]);
+      scene.add(w);
+    });
+
+    // 集装箱
+    const containerGeo = new THREE.BoxGeometry(0.8, 0.5, 0.5);
+    const containerColors = [0x00d2ff, 0xffaa44, 0x00ff88, 0xff6688];
+    for (let i = 0; i < 20; i++) {
+      const mat = new THREE.MeshStandardMaterial({
+        color: containerColors[i % 4], roughness: 0.5, metalness: 0.4
+      });
+      const c = new THREE.Mesh(containerGeo, mat);
+      c.position.set((Math.random()-0.5)*16, -1.5 + Math.random()*0.3, (Math.random()-0.5)*16);
+      c.rotation.y = Math.random() * Math.PI;
+      scene.add(c);
+    }
+
+    // 运输线路（发光线条）
+    const linePoints = [
+      new THREE.Vector3(-6, -1, -3), new THREE.Vector3(0, -1, 0),
+      new THREE.Vector3(6, -1, -2), new THREE.Vector3(0, -1, 0),
+      new THREE.Vector3(-4, -1, 4), new THREE.Vector3(0, -1, 0),
+      new THREE.Vector3(5, -1, 5), new THREE.Vector3(0, -1, 0)
+    ];
+    const lineGeo = new THREE.BufferGeometry().setFromPoints(linePoints);
+    const lineMat = new THREE.LineBasicMaterial({ color: 0x00d2ff, transparent: true, opacity: 0.3 });
+    scene.add(new THREE.LineSegments(lineGeo, lineMat));
+
+    // 中心能量球
+    const core = new THREE.Mesh(
+      new THREE.SphereGeometry(0.6, 32, 32),
+      new THREE.MeshStandardMaterial({ color: 0x00d2ff, emissive: 0x0088aa, emissiveIntensity: 0.6, roughness: 0.2, metalness: 0.7 })
+    );
+    core.position.set(0, 0, 0);
+    scene.add(core);
+
+    // 粒子系统
+    const particles = new THREE.BufferGeometry();
+    const pos = new Float32Array(500 * 3);
+    for (let i = 0; i < 500*3; i++) pos[i] = (Math.random()-0.5)*30;
+    particles.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const pMat = new THREE.PointsMaterial({ color: 0x4488ff, size: 0.05, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending });
+    scene.add(new THREE.Points(particles, pMat));
+
+    // 自动旋转相机
+    let angle = 0;
+    function animate() {
+      requestAnimationFrame(animate);
+      angle += 0.0015;
+      camera.position.x = Math.sin(angle) * 14;
+      camera.position.z = Math.cos(angle) * 14;
+      camera.position.y = 4;
+      camera.lookAt(0, 0, 0);
+      core.rotation.y += 0.01;
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth/window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  })();
+
+})();
+</script>
+</body>
+</html>
