@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HF锂离子蓄电池 · 3D数字孪生供应链仿真平台</title>
+  <title>新能源蓄电池数字孪生供应链智能运营仿真实验</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
   <script>/* 内嵌本地库 echarts.min.js（原CDN: https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js）*/
 
@@ -1817,8 +1817,8 @@ w[f]=1}i[b]=f;}}for(g=l.s.r+n;g<=l.e.r;++g){if((T[g]||{}).hidden)continue;var A=
     <div class="login-content">
       <div class="login-logo-area">
         <div class="bolt-icon"><i class="fas fa-bolt"></i></div>
-        <h1>合肥大学新能源蓄电池虚拟仿真实验</h1>
-        <div class="subtitle">3D 数字孪生 · 供应链运营虚拟仿真平台</div>
+        <h1>合肥大学新能源蓄电池数字孪生供应链智能运营仿真实验</h1>
+        <div class="subtitle">3D 数字孪生 · 供应链智能运营仿真实验</div>
       </div>
       <div class="login-features">
         <div class="login-feature"><i class="fas fa-industry"></i>双工厂生产</div>
@@ -1858,7 +1858,7 @@ w[f]=1}i[b]=f;}}for(g=l.s.r+n;g<=l.e.r;++g){if((T[g]||{}).hidden)continue;var A=
       <div class="header-bar">
         <div class="logo">
           <i class="fas fa-bolt"></i>
-          <span>HF锂离子蓄电池 · 3D数字孪生供应链仿真</span>
+          <span>新能源蓄电池数字孪生供应链智能运营仿真实验</span>
         </div>
         <div class="user-info">
           <i class="fas fa-user-circle"></i>
@@ -1985,18 +1985,25 @@ w[f]=1}i[b]=f;}}for(g=l.s.r+n;g<=l.e.r;++g){if((T[g]||{}).hidden)continue;var A=
       ['HF2024009', 81, 21, 19, 16, 13, 12],
       ['HF2024010', 87, 22, 21, 17, 14, 13]
     ];
-    // 使用确定性基准时间（而非 Date.now()），保证不同浏览器/不同机器播种出的记录
-    // 完全一致，服务端按「用户名+时间」去重后不会出现重复行
-    const SEED_BASE = new Date(2026, 8, 1, 9, 0, 0).getTime();   // 2026-09-01 09:00
-    const day = 86400000;
-    scoreRoll = seeds.map((s, i) => ({
-      user: s[0], score: s[1],
-      proc: s[2], log: s[3], fill: s[4], prod: s[5], dev: s[6],
-      fillRate: Math.round(70 + (i % 5) * 4 + (i % 3)),
-      deviation: 3 + (i % 6),
-      events: i % 7,
-      time: SEED_BASE + i * day
-    }));
+    // 示例台账完成时间：日期取「近 45 天内」、具体时间取 8:30–10:00 之间随机，
+    // 既合理（均在今日之前、工作日上午）又各不相同，避免示例数据全部挤在同一时刻或整齐划一。
+    const baseDay = new Date(); baseDay.setHours(0, 0, 0, 0);
+    const DAY = 86400000;
+    scoreRoll = seeds.map((s, i) => {
+      const daysAgo = 1 + Math.floor(Math.random() * 45);          // 1~45 天前（均在今日之前）
+      const tMin = 8 * 60 + 30 + Math.floor(Math.random() * 90);   // 8:30~10:00 随机
+      const hh = Math.floor(tMin / 60), mm = tMin % 60;
+      const d = new Date(baseDay.getTime() - daysAgo * DAY);
+      d.setHours(hh, mm, 0, 0);
+      return {
+        user: s[0], score: s[1],
+        proc: s[2], log: s[3], fill: s[4], prod: s[5], dev: s[6],
+        fillRate: Math.round(70 + (i % 5) * 4 + (i % 3)),
+        deviation: 3 + (i % 6),
+        events: i % 7,
+        time: d.getTime()
+      };
+    });
     localStorage.setItem('hf_ledgerSeeded', '1');
     saveLocal();
   }
@@ -2198,7 +2205,7 @@ w[f]=1}i[b]=f;}}for(g=l.s.r+n;g<=l.e.r;++g){if((T[g]||{}).hidden)continue;var A=
       loginScreen.style.display = 'none';
       mainWrapper.classList.add('active');
       navigateToStep(1);
-      notify('登录成功 · 欢迎使用3D虚拟仿真平台');
+      notify('登录成功 · 欢迎使用新能源蓄电池数字孪生供应链智能运营仿真实验');
     } else {
       alert('用户名或密码错误');
     }
@@ -2249,7 +2256,7 @@ w[f]=1}i[b]=f;}}for(g=l.s.r+n;g<=l.e.r;++g){if((T[g]||{}).hidden)continue;var A=
         html = '<h2><i class="fas fa-check-circle" style="color:#0a8f4a;"></i> 欢迎进入实验平台</h2>' +
           '<div class="supply-hero">' +
             '<img src="assets/login-bg.jpg" alt="智能供应链全景">' +
-            '<div class="hero-overlay"><div><h3>新能源锂离子蓄电池供应链数字孪生</h3>' +
+            '<div class="hero-overlay"><div><h3>新能源蓄电池数字孪生供应链智能运营仿真实验</h3>' +
             '<p>从电芯采购到PACK交付，全链路60天动态仿真</p></div></div>' +
           '</div>' +
           '<h3 style="margin:1.2rem 0 0.6rem; color:var(--theme);"><i class="fas fa-video"></i> 平台讲解视频</h3>' +
@@ -2328,9 +2335,9 @@ w[f]=1}i[b]=f;}}for(g=l.s.r+n;g<=l.e.r;++g){if((T[g]||{}).hidden)continue;var A=
           '</details>' +
 
           '<details style="background:#f8fafc; border:1px solid #dce4ec; border-radius:0.8rem; padding:0.8rem; margin:0 0 1rem 0;">' +
-            '<summary style="cursor:pointer; font-weight:600; color:var(--theme); font-size:1rem;"><i class="fas fa-clipboard-list"></i> HF锂离子蓄电池操作手册 V1.0（点击展开）</summary>' +
+            '<summary style="cursor:pointer; font-weight:600; color:var(--theme); font-size:1rem;"><i class="fas fa-clipboard-list"></i> 新能源蓄电池数字孪生供应链智能运营仿真实验 操作手册 V1.0（点击展开）</summary>' +
             '<div style="margin-top:0.8rem; line-height:1.9; color:#2c3e50; font-size:0.88rem;">' +
-              '<p><strong>1. 系统概述：</strong>本平台为《HF锂离子蓄电池 · 3D数字孪生供应链虚拟仿真实验》，基于Three.js构建3D可视化场景，模拟锂离子蓄电池PACK（新能源汽车车载版+工业无人机版）从电芯采购、模组集成、PACK装配、物流配送到客户交付的完整供应链流程。用户扮演供应链管理者，在11个步骤中完成决策，通过60天模拟运行获得综合评分。</p>' +
+              '<p><strong>1. 系统概述：</strong>本平台为《新能源蓄电池数字孪生供应链智能运营仿真实验》，基于Three.js构建3D可视化场景，模拟锂离子蓄电池PACK（新能源汽车车载版+工业无人机版）从电芯采购、模组集成、PACK装配、物流配送到客户交付的完整供应链流程。用户扮演供应链管理者，在11个步骤中完成决策，通过60天模拟运行获得综合评分。</p>' +
               '<p style="margin-top:0.4rem;"><strong>2. 环境要求：</strong>推荐最新版Chrome/Edge浏览器，需联网加载CDN资源，建议分辨率≥1366×768。</p>' +
               '<p style="margin-top:0.4rem;"><strong>3. 登录：</strong>用户名 <code style="background:#eef4fb;padding:0.1rem 0.4rem;border-radius:0.3rem;">HFAdmin</code> / 密码 <code style="background:#eef4fb;padding:0.1rem 0.4rem;border-radius:0.3rem;">supply2024</code>，点击"进入仿真实验"。</p>' +
               '<p style="margin-top:0.4rem;"><strong>4. 实验流程（12步）：</strong></p>' +
@@ -2609,7 +2616,7 @@ w[f]=1}i[b]=f;}}for(g=l.s.r+n;g<=l.e.r;++g){if((T[g]||{}).hidden)continue;var A=
       '</div>' +
       '<div class="fk-stage">' +
         '<div id="forkliftScene3d" class="fk-canvas"></div>' +
-        '<div class="fk-hint"><i class="fas fa-sync-alt"></i> 鼠标拖拽旋转视角 · 滚轮缩放（自由视角可环视）</div>' +
+        '<div class="fk-hint"><i class="fas fa-sync-alt"></i> 鼠标拖拽旋转视角 · 滚轮缩放（任意视角均可用；按 C 切到自由视角可 360° 环视）</div>' +
         '<div class="fk-hotkeys" id="hotkeys">' +
           '<span><b>W/S</b>前进后退</span><span><b>A/D</b>转向</span><span><b>R/F</b>货叉升降</span><span><b>Q/Z</b>货叉转向</span>' +
           '<span><b>G</b>侧板</span><span><b>L</b>锁定</span><span><b>E</b>拣选</span><span><b>X</b>卸货</span><span><b>C</b>视角</span>' +
@@ -2808,7 +2815,7 @@ w[f]=1}i[b]=f;}}for(g=l.s.r+n;g<=l.e.r;++g){if((T[g]||{}).hidden)continue;var A=
             '<div style="margin-top:0.8rem; display:flex; gap:0.8rem; flex-wrap:wrap; align-items:center;">' +
               '<button class="btn-download" id="downloadLedgerBtn"><i class="fas fa-file-excel"></i> 导出台账Excel</button>' +
               '<button class="secondary" id="refreshLedgerBtn"><i class="fas fa-sync-alt"></i> 刷新台账</button>' +
-              '<span style="font-size:0.8rem; color:#6c7a89;">累计参与实验：<strong style="color:var(--theme);" id="participantTotalBadge">' + participantTotal() + '</strong> 人次（基线 ' + PARTICIPANT_BASE + ' 人次，后期每次登录按 ' + LOGIN_INCREMENT + ' 人次登记）</span>' +
+              '<span style="font-size:0.8rem; color:#6c7a89;">累计参与实验：<strong style="color:var(--theme);" id="participantTotalBadge">' + participantTotal() + '</strong> 人次</span>' +
             '</div></div>' +
           '<button class="primary" id="saveReview"><i class="fas fa-save"></i> 保存复盘笔记</button>' +
           '<button class="secondary" id="resetExperiment"><i class="fas fa-redo"></i> 重新开始实验</button>';
@@ -3384,10 +3391,82 @@ var fkRO = null; if (window.ResizeObserver){ fkRO = new ResizeObserver(fkResize)
 try { renderer.outputEncoding = THREE.sRGBEncoding; } catch(e){}
 try { renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.08; } catch(e){}
 
-const controls = makeOrbit(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.maxPolarAngle = Math.PI/2 - 0.05;
-controls.minDistance = 2.5; controls.maxDistance = 45;
+/* ============================================================
+   相机系统（自研轨道控制：拖拽旋转 + 滚轮缩放）
+   · 不依赖 OrbitControls，避免与平台脚本化机位互相覆盖
+   · 环视类机位（跟随 / 货叉 / 俯视 / 自由 / 结构认知）：
+       取脚本基准机位 → 减去注视点得偏移量 → 在偏移量上叠加用户
+       yaw / pitch / zoom（绕注视点球面旋转 + 半径缩放）→ 相机插值到该目标。
+       用户偏移施加在基准机位而非当前相机上，不会被插值回弹，
+       且角度可无限累积，自由视角可 360° 环视
+   · 驾驶视角（第一人称）：相机固定于驾驶位，拖拽=转头环视，滚轮=变焦(FOV)
+   · 任意视角下鼠标拖拽与滚轮均可用
+============================================================ */
+const fkCam = {
+  target: new THREE.Vector3(0, 1.0, 0),   // 注视点
+  yaw: 0,                                 // 用户水平旋转偏移（累加，可 360°）
+  pitch: 0,                               // 用户垂直旋转偏移
+  zoom: 1,                                // 用户滚轮缩放系数
+  dragging: false, px: 0, py: 0
+};
+const _fkSph = new THREE.Spherical();
+const _fkOff = new THREE.Vector3();   // 相机相对注视点的偏移量
+const _fkTgt = new THREE.Vector3();   // 注视点（世界坐标）
+const _fkCam = new THREE.Vector3();   // 脚本基准机位（世界坐标）
+const _fkTmp = new THREE.Vector3();   // 临时量
+
+/** 就地给偏移量叠加用户轨道偏移：yaw 水平环视、pitch 俯仰、zoom 缩放 */
+function fkApplyOrbit(off){
+  if (off.lengthSq() < 1e-6) return;
+  _fkSph.setFromVector3(off);
+  _fkSph.theta += fkCam.yaw;                                     // 水平环视
+  _fkSph.phi = Math.max(0.03, Math.min(Math.PI * 0.5 - 0.03,      // 限制在地平面以上、不翻转
+                                        _fkSph.phi + fkCam.pitch));
+  _fkSph.radius = Math.max(1.2, Math.min(90, _fkSph.radius * fkCam.zoom)); // 滚轮缩放
+  off.setFromSpherical(_fkSph);
+}
+
+/* ---------- 鼠标拖拽旋转 ---------- */
+function fkOnDown(e){
+  if (e.button !== 0) return;
+  fkCam.dragging = true; fkCam.px = e.clientX; fkCam.py = e.clientY;
+  try { renderer.domElement.setPointerCapture(e.pointerId); } catch(_){}
+  renderer.domElement.style.cursor = 'grabbing';
+  e.preventDefault();
+}
+function fkOnMove(e){
+  if (!fkCam.dragging) return;
+  var dx = e.clientX - fkCam.px, dy = e.clientY - fkCam.py;
+  fkCam.px = e.clientX; fkCam.py = e.clientY;
+  fkCam.yaw   -= dx * 0.005;    // 右拖 → 场景随鼠标环视
+  fkCam.pitch -= dy * 0.005;    // 下拖 → 视角抬高
+  e.preventDefault();
+}
+function fkOnUp(e){
+  fkCam.dragging = false;
+  try { renderer.domElement.releasePointerCapture(e.pointerId); } catch(_){}
+  renderer.domElement.style.cursor = 'grab';
+}
+/* ---------- 滚轮缩放 ---------- */
+function fkOnWheel(e){
+  e.preventDefault();
+  fkCam.zoom = Math.max(0.25, Math.min(3.0, fkCam.zoom * (1 + e.deltaY * 0.0012)));
+}
+renderer.domElement.style.cursor = 'grab';
+renderer.domElement.style.touchAction = 'none';
+renderer.domElement.addEventListener('pointerdown', fkOnDown);
+renderer.domElement.addEventListener('pointermove', fkOnMove);
+renderer.domElement.addEventListener('pointerup', fkOnUp);
+renderer.domElement.addEventListener('pointercancel', fkOnUp);
+renderer.domElement.addEventListener('wheel', fkOnWheel, { passive: false });
+
+/* 兼容既有引用：controls.target / controls.update() */
+const controls = {
+  target: fkCam.target,
+  enabled: false,
+  update: function(){ camera.lookAt(fkCam.target); },
+  dispose: function(){}
+};
 
 scene.add(new THREE.AmbientLight(0xbfd4ff, 0.55));
 scene.add(new THREE.HemisphereLight(0x9fc5ff, 0x223140, 0.5));
@@ -3965,6 +4044,7 @@ function resetAll(){
   if(state.dropCargo) state.dropCargo.length=0; state.pendingBonus=0; state.pendingCount=0; state.savedForkH=0; state.dump=null;
   state.score=100; state.drops=0; state.lockUsed=false; state.structSeen=new Set();
   state.stepIndex=0; state.finished=false; state.resultOpen=false; state.camMode='follow'; state.camIndex=0;
+  fkCam.yaw = 0; fkCam.pitch = 0; fkCam.zoom = 1; fkCam.dragging = false;
   if(document.getElementById('score')) document.getElementById('score').textContent='得分：100';
   if(document.getElementById('resultOverlay')) document.getElementById('resultOverlay').style.display='none';
   renderSteps(); clearHighlight(); setMode('op'); if(typeof setCamLabel==='function') setCamLabel();
@@ -4086,6 +4166,8 @@ function setCamLabel() {
 function switchCam() {
   state.camIndex = (state.camIndex + 1) % camModes.length;
   state.camMode = camModes[state.camIndex];
+  // 切换视角时复位用户轨道偏移，保证每个机位都是标准构图
+  fkCam.yaw = 0; fkCam.pitch = 0; fkCam.zoom = 1;
   toast('视角：' + camNames[state.camIndex], 'ok');
   setCamLabel();
 }
@@ -4279,45 +4361,61 @@ function animate() {
     }
   }
 
-  /* --- 相机 --- */
+  /* --- 相机：脚本机位 + 用户轨道偏移（拖拽旋转 / 滚轮缩放） --- */
   if (mode === 'op') {
     const t = truck.position, ry = truck.rotation.y;
-    if (state.camMode === 'free') {
-      // 自由视角：鼠标拖拽 / 滚轮缩放（环视叉车作业）
-      controls.enabled = true;
-      if (controls.target && controls.target.copy) controls.target.copy(t).add(new THREE.Vector3(0, 1.0, 0));
-      controls.update();
+    if (state.camMode === 'cab') {
+      /* 驾驶视角（第一人称）：相机固定于驾驶位，拖拽=转头环视，滚轮=变焦 */
+      _fkCam.set(0, 1.0, 0.2).applyAxisAngle(Y, ry);              // 驾驶位（车体局部）
+      camera.position.copy(t).add(_fkCam);
+      _fkOff.set(0, 0, 1).applyAxisAngle(Y, ry);                  // 车头正前方
+      _fkSph.setFromVector3(_fkOff);
+      _fkSph.theta += fkCam.yaw;                                  // 拖右 → 向右看
+      _fkSph.phi = Math.max(0.12, Math.min(Math.PI - 0.12,        // 拖下 → 向下看
+                        _fkSph.phi - fkCam.pitch));
+      _fkOff.setFromSpherical(_fkSph);
+      fkCam.target.copy(camera.position).add(_fkOff);
+      var fov = Math.max(26, Math.min(78, 55 * fkCam.zoom));      // 滚轮变焦
+      if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
+      camera.lookAt(fkCam.target);
     } else {
-      controls.enabled = false;
-      if (state.camMode === 'follow') {
-        const desired = tmpV.copy(t).add(new THREE.Vector3(0, 3.2, -5.5).applyAxisAngle(Y, ry));
-        camera.position.lerp(desired, 1 - Math.pow(0.0015, dt));
-        controls.target.lerp(tmpA.copy(t).add(new THREE.Vector3(0, 1.0, 0)), 1 - Math.pow(0.002, dt));
-      } else if (state.camMode === 'cab') {
-        camera.position.copy(tmpA.copy(t).add(new THREE.Vector3(0, 1.0, 0.2).applyAxisAngle(Y, ry)));
-        controls.target.copy(new THREE.Vector3(0, 0.7, 3).applyAxisAngle(Y, ry).add(t));
+      /* 环视类机位：跟随 / 货叉 / 俯视 / 自由 */
+      if (state.camMode === 'free') {
+        // 自由视角：基准机位用世界坐标（不随车头旋转），用户可 360° 环视叉车作业
+        _fkTgt.copy(t).add(_fkTmp.set(0, 1.0, 0));
+        _fkCam.copy(t).add(_fkTmp.set(0, 3.4, -6.2));
+      } else if (state.camMode === 'follow') {
+        _fkTgt.copy(t).add(_fkTmp.set(0, 1.0, 0));
+        _fkCam.copy(t).add(_fkTmp.set(0, 3.2, -5.5).applyAxisAngle(Y, ry));
       } else if (state.camMode === 'fork') {
         // 货叉视角：前方斜视货叉与拣选框内部（随货叉高度自适应，始终看得到框内叉体与货物）
         const fy = state.forkH;
-        const desired = tmpV.copy(t).add(new THREE.Vector3(0, fy + 2.9, 6.0).applyAxisAngle(Y, ry));
-        camera.position.lerp(desired, 1 - Math.pow(0.002, dt));
-        controls.target.copy(new THREE.Vector3(0, fy + 0.6, 2.0).applyAxisAngle(Y, ry).add(t));
-      } else if (state.camMode === 'top') {
-        // 俯视视角：正上方俯瞰
-        const desired = tmpV.copy(t).add(new THREE.Vector3(0, 14, 0.01).applyAxisAngle(Y, ry));
-        camera.position.lerp(desired, 1 - Math.pow(0.003, dt));
-        controls.target.copy(new THREE.Vector3(0, 0, 1.0).add(t));
+        _fkTgt.copy(t).add(_fkTmp.set(0, fy + 0.6, 2.0).applyAxisAngle(Y, ry));
+        _fkCam.copy(t).add(_fkTmp.set(0, fy + 2.9, 6.0).applyAxisAngle(Y, ry));
+      } else { // top 俯视视角
+        _fkTgt.copy(t).add(_fkTmp.set(0, 0, 1.0));
+        _fkCam.copy(t).add(_fkTmp.set(0, 14, 0.01).applyAxisAngle(Y, ry));
       }
-      controls.update();
+      // 基准偏移 → 叠加用户轨道偏移 → 目标机位
+      _fkOff.copy(_fkCam).sub(_fkTgt);
+      fkApplyOrbit(_fkOff);
+      _fkCam.copy(_fkTgt).add(_fkOff);
+      camera.position.lerp(_fkCam, 1 - Math.pow(0.0015, dt));
+      if (camera.fov !== 55) { camera.fov = 55; camera.updateProjectionMatrix(); }
+      fkCam.target.copy(_fkTgt);
+      camera.lookAt(fkCam.target);
     }
   } else {
-    // 结构模式：环绕展示
-    controls.enabled = false;
+    // 结构认知模式：缓慢环绕展示（同样支持拖拽 / 滚轮微调）
     const tt = performance.now() * 0.0003;
-    const cpos = tmpV.set(Math.cos(tt) * 4.5, 2.4, Math.sin(tt) * 4.5).add(truck.position).add(new THREE.Vector3(0, 0.4, 0.9));
-    camera.position.lerp(cpos, 1 - Math.pow(0.01, dt));
-    controls.target.lerp(truck.position.clone().add(new THREE.Vector3(0, 0.6, 1.2)), 1 - Math.pow(0.01, dt));
-    controls.update();
+    _fkTgt.copy(truck.position).add(_fkTmp.set(0, 0.6, 1.2));
+    _fkCam.set(Math.cos(tt) * 4.5, 2.4, Math.sin(tt) * 4.5).add(truck.position).add(_fkTmp.set(0, 0.4, 0.9));
+    _fkOff.copy(_fkCam).sub(_fkTgt);
+    fkApplyOrbit(_fkOff);
+    _fkCam.copy(_fkTgt).add(_fkOff);
+    camera.position.lerp(_fkCam, 1 - Math.pow(0.01, dt));
+    fkCam.target.copy(_fkTgt);
+    camera.lookAt(fkCam.target);
   }
 
   /* --- HUD --- */
@@ -4353,6 +4451,11 @@ FK_RUN = true; animate();
       window.removeEventListener('keydown', fkKeyDown);
       window.removeEventListener('keyup', fkKeyUp);
       if (fkRO) try { fkRO.disconnect(); } catch(e){}
+      try { renderer.domElement.removeEventListener('pointerdown', fkOnDown); } catch(e){}
+      try { renderer.domElement.removeEventListener('pointermove', fkOnMove); } catch(e){}
+      try { renderer.domElement.removeEventListener('pointerup', fkOnUp); } catch(e){}
+      try { renderer.domElement.removeEventListener('pointercancel', fkOnUp); } catch(e){}
+      try { renderer.domElement.removeEventListener('wheel', fkOnWheel); } catch(e){}
       try { renderer.dispose(); } catch(e){}
       if (renderer.domElement && renderer.domElement.parentNode) renderer.domElement.parentNode.removeChild(renderer.domElement);
     },
@@ -4929,7 +5032,10 @@ function mountWarehouseScene(container){
   // 保证拖拽旋转 / 滚轮缩放 / 触摸 / 自动旋转在所有环境下都能用。
   function makeOrbit(camera, dom, target){
     if (typeof THREE !== 'undefined' && THREE.OrbitControls) {
-      return new THREE.OrbitControls(camera, dom);
+      var oc = new THREE.OrbitControls(camera, dom);
+      // 真实 OrbitControls 的 target 默认为 (0,0,0)，需按调用方传入的注视点设置
+      if (target) { oc.target.set(target[0], target[1], target[2]); try { oc.update(); } catch(e){} }
+      return oc;
     }
     target = target || [0, 0, 0];
     var t = new THREE.Vector3(target[0], target[1], target[2]);
@@ -6011,9 +6117,6 @@ function mountWarehouseScene(container){
 
     const stat = [
       { '指标': '累计参与实验(人次)', '数值': participantTotal() },
-      { '指标': '基线人数', '数值': PARTICIPANT_BASE },
-      { '指标': '后期登录次数', '数值': totalLogins },
-      { '指标': '每次登录登记倍数', '数值': LOGIN_INCREMENT },
       { '指标': '台账展示条数', '数值': LEDGER_ROWS },
       { '指标': '累计成绩记录数', '数值': scoreRoll.length },
       { '指标': '服务端同步状态', '数值': apiOnline ? '已启用(跨浏览器累计)' : '未启用(仅本地浏览器存储)' },
@@ -6023,7 +6126,7 @@ function mountWarehouseScene(container){
     ws2['!cols'] = [{ wch: 24 }, { wch: 32 }];
     XLSX.utils.book_append_sheet(wb, ws2, '平台统计');
 
-    XLSX.writeFile(wb, 'HF锂离子蓄电池_实验成绩台账.xlsx');
+    XLSX.writeFile(wb, '新能源蓄电池数字孪生供应链智能运营仿真实验_实验成绩台账.xlsx');
     notify('成绩台账Excel导出成功（' + rows.length + '条）！');
   }
 
