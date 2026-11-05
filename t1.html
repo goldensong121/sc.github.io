@@ -2576,7 +2576,7 @@ w[f]=1}i[b]=f;}}for(g=l.s.r+n;g<=l.e.r;++g){if((T[g]||{}).hidden)continue;var A=
       '<div class="fk-title"><i class="fas fa-truck-loading"></i> 叉车出库拣选作业</div>' +
       '<div class="fk-badge">锂电成品 PACK 出库发运</div>' +
       '<div class="fk-spacer"></div>' +
-      '<div class="fk-score" id="score">得分：100</div>' +
+      '<div class="fk-score" id="score">得分：0</div>' +
       '<div class="fk-modes">' +
         '<button id="btnModeOp" class="active">实操模式</button>' +
         '<button id="btnModeStruct">结构认知</button>' +
@@ -2631,7 +2631,8 @@ w[f]=1}i[b]=f;}}for(g=l.s.r+n;g<=l.e.r;++g){if((T[g]||{}).hidden)continue;var A=
       '<div class="row"><span>货物落地次数</span><span id="resDrop">-</span></div>' +
       '<div class="row"><span>锁定组件使用</span><span id="resLock">-</span></div>' +
       '<div class="row"><span>结构认知部件</span><span id="resStruct">-</span></div>' +
-      '<div class="total" id="resTotal">100 分</div>' +
+      '<div class="total" id="resTotal">0 分</div>' +
+      '<div class="rule" style="font-size:0.74rem;color:#7a8aa0;line-height:1.5;margin:0.2rem 0 0.6rem;padding:0.5rem 0.7rem;background:#f3f7fb;border-radius:0.5rem;">评分构成：叉取货物 15×3 + 拣选入框 15×3 + 整框卸货 10 + 安全锁定 10（封顶 100；货物落地每次 −30）</div>' +
       '<button id="btnAgain">再次实验</button>' +
     '</div></div>' +
   '</div>' +
@@ -3829,7 +3830,7 @@ const state = {
   pendingBonus: 0, pendingCount: 0,
   savedForkH: 0,            // 卸货前货叉高度（卸完降回）
   dump: null,               // 货叉外翻入框动画 {cargo, t, phase, from, to}
-  score: 100,
+  score: 0,
   drops: 0, lockUsed: false, structSeen: new Set(),
   stepIndex: 0,
   finished: false, resultOpen: false,
@@ -3878,7 +3879,7 @@ function log(msg, type='') {
   while (box.children.length > 6) box.lastChild.remove();
 }
 function addScore(n, why) {
-  state.score += n;
+  state.score = Math.max(0, Math.min(100, state.score + n));
   document.getElementById('score').textContent = '得分：' + state.score;
   log((n>=0?'+':'') + n + ' 分 · ' + why, n>=0?'ok':'bad');
 }
@@ -3975,6 +3976,7 @@ function doAction() {
       }
       cargo.state = 'fork';
       state.carrying = cargo;
+      addScore(15, '叉取货物');
       toast('已叉取 ' + cargo.id + ' 号货物 ✓，运至拣选框后按 E 放入', 'ok');
       log('叉取 ' + cargo.id + ' 号货物', 'ok');
       if (state.stepIndex === 0 || state.stepIndex === 1) state.stepIndex = 2, renderSteps();
@@ -4013,7 +4015,7 @@ function doUnload() {
   const inZone = truck.position.distanceTo(unloadCenter) < 3.2;
   if (!inZone) { toast('请先驶入蓝色卸货区（X）', 'bad'); return; }
   if (state.locked) { state.locked = false; toast('锁定组件已松开，准备卸货'); }
-  state.pendingBonus = state.lockUsed ? 15 : 0;
+  state.pendingBonus = state.lockUsed ? 10 : 0;
   state.pendingCount = state.frameCargo.length;
   state.unloadPhase = 'open';
   toast('整框卸货：拣选框底板翻板向下打开，货物卸落…');
@@ -4042,10 +4044,10 @@ function resetAll(){
   state.panelAngle=0; state.panelTarget=0; state.panelMoving=false; state.locked=false; state.lockAnim=0;
   state.carrying=null; if(state.frameCargo) state.frameCargo.length=0; state.flapAngle=0; state.unloadPhase=null;
   if(state.dropCargo) state.dropCargo.length=0; state.pendingBonus=0; state.pendingCount=0; state.savedForkH=0; state.dump=null;
-  state.score=100; state.drops=0; state.lockUsed=false; state.structSeen=new Set();
+  state.score=0; state.drops=0; state.lockUsed=false; state.structSeen=new Set();
   state.stepIndex=0; state.finished=false; state.resultOpen=false; state.camMode='follow'; state.camIndex=0;
   fkCam.yaw = 0; fkCam.pitch = 0; fkCam.zoom = 1; fkCam.dragging = false;
-  if(document.getElementById('score')) document.getElementById('score').textContent='得分：100';
+  if(document.getElementById('score')) document.getElementById('score').textContent='得分：0';
   if(document.getElementById('resultOverlay')) document.getElementById('resultOverlay').style.display='none';
   renderSteps(); clearHighlight(); setMode('op'); if(typeof setCamLabel==='function') setCamLabel();
   toast('已重置实验', 'ok');
@@ -4312,7 +4314,7 @@ function animate() {
     flapPivots.forEach(f => f.pivot.rotation.z = f.side * state.flapAngle);
     if (state.flapAngle <= 0) {
       state.unloadPhase = null;
-      addScore(20 + state.pendingBonus, '整框卸货成功' + (state.pendingBonus ? '（含锁定保护奖励）' : ''));
+      addScore(10 + state.pendingBonus, '整框卸货成功' + (state.pendingBonus ? '（含锁定保护奖励）' : ''));
       log('整框卸货完成，共 ' + state.pendingCount + ' 件', 'ok');
       state.dropCargo = [];
       finish();
@@ -4351,7 +4353,7 @@ function animate() {
         state.frameCargo.push(c);
         state.dump = null;
         toast(c.id + ' 号货物已放入拣选框 ✓（货叉在框内外翻卸货，货物未落地）', 'ok');
-        addScore(10, '拣选入框 · 货物不落地');
+        addScore(15, '拣选入框 · 货物不落地');
         log('货物入框，当前 ' + state.frameCargo.length + '/3', 'ok');
         if (state.frameCargo.length >= 3) {
           state.stepIndex = 4; renderSteps();
